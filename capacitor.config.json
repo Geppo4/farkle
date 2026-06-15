@@ -1,0 +1,8 @@
+{
+  "appId": "com.geppo.farkle",
+  "appName": "Farkle",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#0f1226"
+  }
+}
