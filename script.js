@@ -33,7 +33,60 @@ const AI_LEVELS = {
   hard:   { risk: 1.0, lazy: 0.0 },
 };
 
-const DIFF_LABEL = { easy: 'Facile', medium: 'Medio', hard: 'Difficile' };
+const DIFF_LABEL = { easy: 'Facile', medium: 'Medio', hard: 'Difficile', expert: 'Esperto' };
+
+/* ---- Livello "Esperto": IA a gioco perfetto ----
+   DP_VALUE[d][t/50] = valore atteso del turno giocando in modo OTTIMALE, con
+   d dadi ancora da lanciare e t punti già accumulati. Tabella precalcolata
+   offline tramite programmazione dinamica (f(6,0) = 505 punti/turno). */
+const DP_VALUE = [null,[189,202,217,231,246,260,275,290,304,319,334,350,365,380,395,410,426,441,457,473,488,504,519,535,551,566,582,598,613,629,645,661,676,692,708,724,740,755,771,787,803,819,835,851,867,883,899,915,931,947,963,979,995,1011,1027,1043,1059,1076,1092,1108,1124,1141,1157,1173,1189,1206,1222,1238,1254,1271,1287,1303,1319,1336,1352,1368,1384,1401,1417,1433,1449,1466,1482,1498,1514,1530,1547,1563,1579,1595,1611,1628,1644,1660,1676,1693,1709,1725,1741,1756,1773],[163,174,185,197,214,239,266,293,320,347,375,402,429,456,484,511,539,566,593,621,648,676,703,731,758,785,813,840,868,895,923,950,978,1005,1033,1060,1088,1115,1143,1170,1198,1225,1253,1280,1308,1336,1363,1391,1418,1446,1473,1501,1529,1556,1584,1611,1639,1667,1694,1722,1750,1777,1805,1833,1860,1888,1915,1943,1971,1998,2026,2054,2081,2109,2137,2164,2192,2219,2247,2275,2302,2330,2358,2385,2413,2440,2468,2496,2523,2551,2579,2606,2634,2661,2689,2717,2744,2772,2799,2827,2855],[177,187,201,223,255,291,327,363,399,435,470,506,542,578,614,650,686,722,758,794,830,866,902,938,973,1009,1045,1081,1117,1153,1189,1225,1261,1297,1333,1369,1405,1441,1477,1513,1549,1585,1621,1657,1693,1729,1765,1801,1837,1873,1909,1945,1981,2017,2053,2089,2125,2162,2198,2234,2270,2306,2342,2378,2414,2450,2486,2522,2558,2594,2630,2666,2702,2738,2774,2810,2846,2882,2918,2954,2990,3026,3062,3099,3135,3171,3207,3243,3279,3315,3351,3387,3423,3459,3495,3531,3567,3603,3639,3675,3710],[219,239,268,302,338,375,412,451,493,535,577,619,661,703,745,787,829,871,913,955,997,1039,1081,1123,1165,1208,1250,1292,1334,1376,1418,1460,1502,1544,1586,1628,1670,1712,1754,1796,1838,1880,1922,1964,2006,2049,2091,2133,2175,2217,2259,2301,2343,2385,2427,2469,2511,2553,2596,2638,2680,2722,2764,2806,2848,2890,2932,2974,3016,3058,3101,3143,3185,3227,3269,3311,3353,3395,3437,3479,3521,3563,3606,3648,3690,3732,3774,3816,3858,3900,3942,3984,4026,4068,4110,4152,4194,4236,4278,4320,4362],[313,346,383,420,458,497,538,581,623,665,707,749,792,836,880,923,967,1011,1056,1101,1147,1193,1239,1285,1332,1378,1424,1470,1516,1562,1608,1654,1700,1746,1792,1838,1885,1931,1977,2023,2069,2115,2161,2207,2253,2299,2346,2392,2438,2484,2530,2576,2622,2668,2714,2761,2807,2853,2899,2945,2991,3037,3083,3129,3176,3222,3268,3314,3360,3406,3452,3498,3544,3591,3637,3683,3729,3775,3821,3867,3913,3959,4005,4052,4098,4144,4190,4236,4282,4328,4374,4420,4466,4512,4559,4605,4651,4697,4742,4789,4835],[505,546,587,628,671,715,759,803,847,891,936,981,1026,1072,1117,1162,1208,1254,1301,1347,1394,1441,1488,1535,1582,1629,1675,1722,1769,1816,1863,1910,1958,2005,2053,2100,2148,2195,2242,2290,2337,2385,2432,2480,2528,2576,2624,2672,2720,2768,2817,2865,2913,2961,3009,3057,3105,3154,3203,3252,3300,3349,3398,3446,3495,3544,3593,3641,3690,3739,3788,3836,3885,3934,3983,4031,4080,4129,4177,4226,4275,4324,4372,4421,4470,4518,4567,4616,4664,4713,4761,4810,4859,4907,4956,5005,5053,5102,5151,5199,5245]];
+function dpValue(d, t){
+  if(t < 0) return t;
+  const i = t / 50;                       // i punteggi sono sempre multipli di 50
+  if(i > 100 || !DP_VALUE[d]) return t;   // oltre la tabella conviene bancare
+  return DP_VALUE[d][i];
+}
+
+/* Scelta ottimale dei dadi da tenere per l'Esperto: tra TUTTI i sottoinsiemi
+   punteggianti del lancio, sceglie quello che massimizza il valore atteso
+   (a volte conviene NON prendere un 5 isolato per tenere più dadi). */
+function expertPick(values, turnScore, alreadySet){
+  const c = countFaces(values);
+  const k = [0,0,0,0,0,0,0];
+  let best = null;
+  (function pick(face){
+    if(face === 7){
+      let used = 0; for(let x=1;x<=6;x++) used += k[x];
+      if(used === 0) return;
+      const g = scoreCounts(k.slice(), used);
+      if(g < 0) return; // i dadi tenuti devono fare tutti punti
+      const newSet = alreadySet + used;
+      const rollDice = (newSet === 6) ? 6 : 6 - newSet; // hot dice → 6
+      const value = Math.max(turnScore + g, dpValue(rollDice, turnScore + g));
+      if(!best || value > best.value){ best = { keep: k.slice(), score: g, value }; }
+      return;
+    }
+    for(let x=0; x<=c[face]; x++){ k[face] = x; pick(face+1); }
+    k[face] = 0;
+  })(1);
+  const need = best.keep.slice();
+  const indices = [];
+  for(let i=0;i<values.length;i++){ if(need[values[i]] > 0){ indices.push(i); need[values[i]]--; } }
+  return { indices, score: best.score };
+}
+
+/* Nomi da "villain" per l'avversario IA (al posto di "CPU · Difficile").
+   L'Esperto è sempre Sauron; gli altri livelli pescano a caso dal loro pool. */
+const VILLAINS = {
+  easy:   ['Pinguino', 'Gargamella', 'Jafar', 'Bowser', 'Goblin'],
+  medium: ['Joker', 'Loki', 'Bane', 'Ultron', 'Mystique'],
+  hard:   ['Darth Vader', 'Venom', 'Thanos', 'Mr. Freeze', 'Dr. Octopus'],
+  expert: ['Sauron'],
+};
+function pickVillain(difficulty){
+  const pool = VILLAINS[difficulty] || VILLAINS.medium;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
 
 /* =========================================================
    PERSONALIZZAZIONE — avatar e temi dado (estensibili)
@@ -94,27 +147,29 @@ function savePrefs(){
   try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch(e){}
 }
 
-/* --- Storico vittorie (solo multiplayer): ultime 10, più recente in cima --- */
-const HISTORY_KEY = 'farkle.history.v1';
+/* --- Storico vittorie: due archivi separati (multi/single), ultime 10 ognuno,
+   più recente in cima. La chiave 'multi' resta 'farkle.history.v1' per non
+   perdere lo storico già salvato dagli utenti. --- */
+const HISTORY_KEYS = { multi: 'farkle.history.v1', single: 'farkle.history.single.v1' };
 const HISTORY_MAX = 10;
 
-function loadHistory(){
+function loadHistory(kind){
   try {
-    const s = localStorage.getItem(HISTORY_KEY);
+    const s = localStorage.getItem(HISTORY_KEYS[kind]);
     const arr = s ? JSON.parse(s) : [];
     return Array.isArray(arr) ? arr : [];
   } catch(e){ return []; }
 }
-function saveHistory(arr){
-  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(arr)); } catch(e){}
+function saveHistory(kind, arr){
+  try { localStorage.setItem(HISTORY_KEYS[kind], JSON.stringify(arr)); } catch(e){}
 }
 // inserisce una nuova partita in testa e mantiene solo le ultime HISTORY_MAX
-function recordMatch(entry){
-  const arr = loadHistory();
+function recordMatch(kind, entry){
+  const arr = loadHistory(kind);
   arr.unshift(entry);
-  saveHistory(arr.slice(0, HISTORY_MAX));
+  saveHistory(kind, arr.slice(0, HISTORY_MAX));
 }
-function clearHistory(){ saveHistory([]); }
+function clearHistory(kind){ saveHistory(kind, []); }
 
 function formatDate(ts){
   try {
@@ -313,6 +368,7 @@ const state = {
 
 const screens = {
   menu:    document.getElementById('screen-menu'),
+  single:  document.getElementById('screen-single'),
   rules:   document.getElementById('screen-rules'),
   setup:   document.getElementById('screen-setup'),
   custom:  document.getElementById('screen-custom'),
@@ -729,10 +785,9 @@ function finishGame(){
   const winner = ranking[0];
   document.getElementById('winner-text').textContent = `${winner.name} vince!`;
 
-  // registra la partita nello storico (solo multiplayer)
-  const overHistBtn = document.getElementById('btn-over-history');
+  // registra la partita nello storico (sia multiplayer sia single player)
   if(state.mode === 'multi'){
-    recordMatch({
+    recordMatch('multi', {
       winner: winner.name,
       winnerAvatar: winner.avatar,
       score: winner.total,
@@ -740,10 +795,20 @@ function finishGame(){
       opponentScore: ranking[1].total,
       ts: Date.now(),
     });
-    overHistBtn.style.display = '';
   } else {
-    overHistBtn.style.display = 'none';
+    // single: il giocatore umano è players[0], la CPU è players[1]
+    recordMatch('single', {
+      won: state.players[0].total >= state.players[1].total,
+      playerScore: state.players[0].total,
+      cpuScore: state.players[1].total,
+      opponent: state.players[1].name,
+      difficulty: state.difficulty,
+      target: state.target,
+      ts: Date.now(),
+    });
   }
+  // il pulsante storico a fine partita è sempre disponibile
+  document.getElementById('btn-over-history').style.display = '';
 
   const board = document.getElementById('final-board');
   board.innerHTML = '';
@@ -822,9 +887,13 @@ function cpuDecide(){
   state.dice.forEach((d, i) => { if(d.status === 'active') activeIdx.push(i); });
   const activeValues = activeIdx.map(i => state.dice[i].value);
 
-  // L'IA dei livelli più bassi a volte sceglie in modo "pigro" (sub-ottimale).
+  const expert = state.difficulty === 'expert';
   let pick;
-  if(Math.random() < AI_LEVELS[state.difficulty].lazy){
+  if(expert){
+    // gioco perfetto: scelta ottimale dei dadi da tenere
+    pick = expertPick(activeValues, state.turnScore, setCount());
+  } else if(Math.random() < AI_LEVELS[state.difficulty].lazy){
+    // L'IA dei livelli più bassi a volte sceglie in modo "pigro" (sub-ottimale).
     pick = lazyScoringSelection(activeValues);
     if(pick.score <= 0) pick = greedyScoringSelection(activeValues);
   } else {
@@ -849,7 +918,18 @@ function cpuDecide(){
     // decisione: continuare o mettere al sicuro?
     let keepGoing;
 
-    if(hotDice){
+    if(expert){
+      // gioco perfetto: rilancia se il valore atteso supera il bancare ora.
+      // (dpValue gestisce da sé anche gli hot dice, diceLeft = 6.)
+      if(state.finalRound){
+        const leader = Math.max(...state.players.map(p => p.total));
+        keepGoing = (total + state.turnScore > leader)
+          ? false
+          : dpValue(diceLeft, state.turnScore) > state.turnScore;
+      } else {
+        keepGoing = dpValue(diceLeft, state.turnScore) > state.turnScore;
+      }
+    } else if(hotDice){
       keepGoing = true; // rilancio gratuito di tutti e 6
     } else if(state.finalRound){
       // deve superare il punteggio più alto avversario
@@ -984,19 +1064,70 @@ function buildSetupCustomization(){
    STORICO VITTORIE (UI)
    ========================================================= */
 
-function buildHistoryScreen(){
-  const hist = loadHistory();
+let historyKind = 'multi';    // tipo di storico mostrato ('multi' | 'single')
+let historyReturn = 'menu';   // schermata a cui torna il pulsante "Indietro"
+
+// Apre lo storico del tipo indicato, ricordando da dove si è arrivati.
+function openHistory(kind, returnTo){
+  historyKind = kind;
+  historyReturn = returnTo;
+  buildHistoryScreen(kind);
+  showScreen('history');
+}
+
+function buildHistoryScreen(kind){
+  const titleEl = document.getElementById('hist-title');
+  const subEl = document.getElementById('hist-sub');
   const summaryEl = document.getElementById('hist-summary');
   const listEl = document.getElementById('hist-list');
   summaryEl.innerHTML = '';
   listEl.innerHTML = '';
 
+  const hist = loadHistory(kind);
+
+  if(kind === 'single'){
+    titleEl.textContent = 'Storico — Giocatore Singolo';
+    subEl.textContent = "Le tue ultime 10 sfide contro l'IA.";
+    if(hist.length === 0){
+      listEl.innerHTML = "<div class=\"hist-empty\">Nessuna partita registrata.<br>Gioca contro l'IA per iniziare a tracciare i tuoi punteggi.</div>";
+      return;
+    }
+    // statistiche di andamento
+    const wins = hist.filter(h => h.won).length;
+    const best = Math.max(...hist.map(h => h.playerScore));
+    const stat = (label, val) => {
+      const el = document.createElement('div');
+      el.className = 'hist-tally';
+      el.innerHTML = `<span>${label}</span><b>${val}</b>`;
+      summaryEl.appendChild(el);
+    };
+    stat('Vittorie', `${wins}/${hist.length}`);
+    stat('Miglior punteggio', formatNum(best));
+
+    hist.forEach((h, idx) => {
+      const cls = h.won ? 'win' : 'loss';
+      const row = document.createElement('div');
+      row.className = 'hist-row' + (idx === 0 ? ' recent' : '');
+      row.innerHTML =
+        `<span class="hr-rank">${idx + 1}</span>` +
+        `<span class="hr-badge ${cls}">${h.won ? 'V' : 'P'}</span>` +
+        `<div class="hr-main">` +
+          `<div class="hr-win ${cls}">${h.won ? 'Vinto' : 'Perso'}</div>` +
+          `<div class="hr-sub">${h.opponent ? 'vs ' + escapeHtml(h.opponent) + ' · ' : ''}${DIFF_LABEL[h.difficulty] || ''} · ${formatDate(h.ts)}</div>` +
+        `</div>` +
+        `<span class="hr-score">${formatNum(h.playerScore)}–${formatNum(h.cpuScore)}</span>`;
+      listEl.appendChild(row);
+    });
+    return;
+  }
+
+  // --- multiplayer ---
+  titleEl.textContent = 'Storico — Multiplayer';
+  subEl.textContent = 'Ultime 10 partite «Passa il telefono».';
   if(hist.length === 0){
     listEl.innerHTML = '<div class="hist-empty">Nessuna partita multiplayer registrata.<br>Gioca una partita «Passa il telefono» per iniziare lo storico.</div>';
     return;
   }
-
-  // conteggio vittorie per nome (sulle partite memorizzate)
   const tally = {};
   for(const h of hist) tally[h.winner] = (tally[h.winner] || 0) + 1;
   Object.keys(tally).sort((a, b) => tally[b] - tally[a]).forEach(name => {
@@ -1005,8 +1136,6 @@ function buildHistoryScreen(){
     el.innerHTML = `<span>${escapeHtml(name)}</span><b>${tally[name]}</b>`;
     summaryEl.appendChild(el);
   });
-
-  // elenco partite: già ordinate dalla più recente alla più vecchia
   hist.forEach((h, idx) => {
     const av = (AVATARS[h.winnerAvatar] || AVATARS.male).svg;
     const row = document.createElement('div');
@@ -1021,6 +1150,67 @@ function buildHistoryScreen(){
       `<span class="hr-score">${formatNum(h.score)}–${formatNum(h.opponentScore)}</span>`;
     listEl.appendChild(row);
   });
+}
+
+// Piccolo dado in SVG (dimensione fissa) per gli esempi del regolamento.
+function miniDieSVG(v){
+  const POS = {
+    1: [[50,50]],
+    2: [[30,30],[70,70]],
+    3: [[30,30],[50,50],[70,70]],
+    4: [[30,30],[70,30],[30,70],[70,70]],
+    5: [[30,30],[70,30],[50,50],[30,70],[70,70]],
+    6: [[30,30],[70,30],[30,50],[70,50],[30,70],[70,70]],
+  };
+  const pips = (POS[v] || []).map(([x,y]) => `<circle cx="${x}" cy="${y}" r="9" fill="#2a2f4e"/>`).join('');
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">` +
+    `<rect x="6" y="6" width="88" height="88" rx="18" fill="#f5f6ff" stroke="#e0b24a" stroke-width="3"/>` +
+    pips + `</svg>`;
+}
+
+// Catalogo punteggi: alimenta sia la tabella "Punteggio visivo" sia il modale.
+const RULE_EXAMPLES = [
+  { name: 'Singolo 1',        dice: [1],           pts: 100,  desc: 'Un dado che mostra 1 vale 100 punti.' },
+  { name: 'Singolo 5',        dice: [5],           pts: 50,   desc: 'Un dado che mostra 5 vale 50 punti.' },
+  { name: 'Tre 1',            dice: [1,1,1],       pts: 1000, desc: 'Tre dadi con l\'1 valgono 1000 punti (il tris più ricco).' },
+  { name: 'Tre 2',            dice: [2,2,2],       pts: 200,  desc: 'Tre dadi con il 2 valgono 200 punti.' },
+  { name: 'Tre 3',            dice: [3,3,3],       pts: 300,  desc: 'Tre dadi con il 3 valgono 300 punti.' },
+  { name: 'Tre 4',            dice: [4,4,4],       pts: 400,  desc: 'Tre dadi con il 4 valgono 400 punti.' },
+  { name: 'Tre 5',            dice: [5,5,5],       pts: 500,  desc: 'Tre dadi con il 5 valgono 500 punti.' },
+  { name: 'Tre 6',            dice: [6,6,6],       pts: 600,  desc: 'Tre dadi con il 6 valgono 600 punti.' },
+  { name: 'Tre coppie',       dice: [2,2,4,4,6,6], pts: 750,  desc: 'Tre coppie qualsiasi nello stesso lancio: 750 punti.' },
+  { name: 'Scala 1-2-3-4-5-6', dice: [1,2,3,4,5,6], pts: 1000, desc: 'Tutti i numeri da 1 a 6 in un solo lancio: 1000 punti.' },
+];
+
+// Costruisce la tabella "Punteggio visivo": righe cliccabili nome + punti.
+function buildRulesExamples(){
+  const cont = document.getElementById('rules-examples');
+  if(!cont || cont.dataset.built) return; // costruisci una sola volta
+  cont.innerHTML = RULE_EXAMPLES.map((ex, i) =>
+    `<div class="rule-example" data-ex="${i}">` +
+      `<span class="sr-name">${ex.name}</span>` +
+      `<span class="sr-pts">${formatNum(ex.pts)}</span>` +
+      `<span class="re-zoom">&#8853;</span>` +
+    `</div>`
+  ).join('');
+  cont.dataset.built = '1';
+}
+
+// Apre il modale con la combinazione ingrandita.
+function openExampleModal(i){
+  const ex = RULE_EXAMPLES[i];
+  if(!ex) return;
+  document.getElementById('modal-dice').innerHTML = ex.dice.map(miniDieSVG).join('');
+  document.getElementById('modal-title').textContent = `${ex.name} = ${formatNum(ex.pts)}`;
+  document.getElementById('modal-desc').textContent = ex.desc;
+  const m = document.getElementById('example-modal');
+  m.classList.add('show');
+  m.setAttribute('aria-hidden', 'false');
+}
+function closeExampleModal(){
+  const m = document.getElementById('example-modal');
+  m.classList.remove('show');
+  m.setAttribute('aria-hidden', 'true');
 }
 
 /* =========================================================
@@ -1045,12 +1235,16 @@ document.getElementById('diff-seg').addEventListener('click', e => {
   btn.classList.add('active');
 });
 
-document.getElementById('btn-single').addEventListener('click', () => {
+// Menu → pagina Giocatore Singolo (obiettivo + difficoltà + storico)
+document.getElementById('btn-single').addEventListener('click', () => showScreen('single'));
+document.getElementById('btn-single-back').addEventListener('click', () => showScreen('menu'));
+document.getElementById('btn-single-start').addEventListener('click', () => {
   startGame('single', [
     { name: 'Tu', avatar: prefs.avatar, dice: prefs.dice },
-    { name: 'CPU · ' + DIFF_LABEL[state.difficulty], avatar: 'cpu', dice: prefs.dice },
+    { name: pickVillain(state.difficulty), avatar: 'cpu', dice: prefs.dice },
   ]);
 });
+document.getElementById('btn-single-history').addEventListener('click', () => openHistory('single', 'single'));
 
 document.getElementById('btn-multi').addEventListener('click', () => {
   document.getElementById('name-p1').value = '';
@@ -1058,6 +1252,7 @@ document.getElementById('btn-multi').addEventListener('click', () => {
   buildSetupCustomization();
   showScreen('setup');
 });
+document.getElementById('btn-setup-history').addEventListener('click', () => openHistory('multi', 'setup'));
 
 document.getElementById('btn-custom').addEventListener('click', () => {
   buildCustomScreen();
@@ -1065,24 +1260,34 @@ document.getElementById('btn-custom').addEventListener('click', () => {
 });
 document.getElementById('btn-custom-back').addEventListener('click', () => showScreen('menu'));
 
-document.getElementById('btn-history').addEventListener('click', () => {
-  buildHistoryScreen();
-  showScreen('history');
-});
-document.getElementById('btn-history-back').addEventListener('click', () => showScreen('menu'));
+// Storico: torna alla schermata di provenienza; svuota il tipo corrente
+document.getElementById('btn-history-back').addEventListener('click', () => showScreen(historyReturn));
 document.getElementById('btn-hist-clear').addEventListener('click', () => {
-  if(confirm('Svuotare lo storico delle vittorie?')){
-    clearHistory();
-    buildHistoryScreen();
+  if(confirm('Svuotare questo storico?')){
+    clearHistory(historyKind);
+    buildHistoryScreen(historyKind);
   }
 });
 document.getElementById('btn-over-history').addEventListener('click', () => {
-  buildHistoryScreen();
-  showScreen('history');
+  openHistory(state.mode === 'multi' ? 'multi' : 'single', 'over');
 });
 
-document.getElementById('btn-rules').addEventListener('click', () => showScreen('rules'));
+document.getElementById('btn-rules').addEventListener('click', () => {
+  buildRulesExamples();
+  showScreen('rules');
+});
 document.getElementById('btn-rules-back').addEventListener('click', () => showScreen('menu'));
+
+// Esempi cliccabili → apre il modale ingrandito
+document.getElementById('rules-examples').addEventListener('click', e => {
+  const row = e.target.closest('.rule-example');
+  if(row) openExampleModal(parseInt(row.dataset.ex, 10));
+});
+document.getElementById('modal-close').addEventListener('click', closeExampleModal);
+// chiusura toccando lo sfondo scuro (ma non la card)
+document.getElementById('example-modal').addEventListener('click', e => {
+  if(e.target.id === 'example-modal') closeExampleModal();
+});
 document.getElementById('btn-setup-back').addEventListener('click', () => showScreen('menu'));
 
 document.getElementById('btn-setup-start').addEventListener('click', () => {
