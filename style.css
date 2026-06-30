@@ -107,6 +107,10 @@ body{
 .seg-btn small{font-size:11px;opacity:.85;}
 .seg-btn:active{transform:scale(.96);}
 .seg-btn.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#241500;box-shadow:var(--shadow);}
+/* selettore con 4 voci (es. difficoltà): testo più compatto per stare in riga */
+.seg-4{gap:5px;padding:5px;}
+.seg-4 .seg-btn{padding:10px 2px;}
+.seg-4 .seg-btn b{font-size:14px;}
 
 .menu-buttons{display:flex;flex-direction:column;gap:14px;}
 .credit{text-align:center;color:var(--muted);font-size:13px;opacity:.7;}
@@ -348,6 +352,56 @@ body{
 .hr-win{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .hr-sub{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .hr-score{font-weight:800;color:var(--accent);font-size:15px;white-space:nowrap;flex:none;}
+
+/* badge esito per lo storico single player */
+.hr-badge{
+  width:36px;height:36px;border-radius:50%;flex:none;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:15px;color:#fff;
+}
+.hr-badge.win{background:var(--green-d);}
+.hr-badge.loss{background:#c81d4a;}
+.hr-win.win{color:var(--green);}
+.hr-win.loss{color:var(--red);}
+
+/* ===== Tabella "Punteggio visivo" (regolamento) ===== */
+.rules-hint{font-size:13px;color:var(--muted);font-style:italic;margin-top:-4px;}
+.rules-examples{display:flex;flex-direction:column;gap:6px;}
+.rule-example{
+  display:flex;align-items:center;gap:10px;width:100%;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+  border-radius:10px;padding:11px 14px;cursor:pointer;text-align:left;
+  transition:background .15s,transform .08s;
+}
+.rule-example:active{transform:scale(.99);background:rgba(255,255,255,.09);}
+.sr-name{flex:1;min-width:0;font-size:15px;font-weight:600;color:var(--text);}
+.sr-pts{flex:none;font-size:15px;font-weight:800;color:var(--accent);}
+.re-zoom{flex:none;color:var(--muted);font-size:18px;line-height:1;}
+
+/* dadi (usati nel modale e, se servono, in riga) */
+.mini-dice{display:flex;gap:5px;flex:none;flex-wrap:wrap;}
+.mini-dice svg{width:30px;height:30px;display:block;}
+
+/* ===== Modale esempio (lightbox) ===== */
+.modal{
+  position:fixed;inset:0;z-index:50;
+  display:none;align-items:center;justify-content:center;padding:24px;
+  background:rgba(6,8,20,.74);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
+}
+.modal.show{display:flex;animation:modalFade .15s ease;}
+@keyframes modalFade{from{opacity:0;}to{opacity:1;}}
+.modal-card{
+  background:var(--card2);border-radius:20px;padding:24px 22px;
+  max-width:360px;width:100%;text-align:center;box-shadow:var(--shadow);
+  display:flex;flex-direction:column;gap:14px;align-items:center;
+  animation:modalPop .2s ease;
+}
+@keyframes modalPop{from{transform:scale(.9);opacity:0;}to{transform:scale(1);opacity:1;}}
+.modal-dice{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+.modal-dice svg{width:50px;height:50px;display:block;}
+.modal-card h3{font-size:22px;color:var(--accent);}
+.modal-card p{font-size:15px;color:var(--text);line-height:1.45;}
+.modal-card .btn{max-width:220px;}
 
 /* ===== Schermi piccoli ===== */
 @media (max-height:680px){
