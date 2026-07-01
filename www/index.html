@@ -22,8 +22,27 @@
       <div class="logo">
         <span class="logo-die">&#9861;</span>
         <h1>FARKLE</h1>
-        <p class="tagline">Scegli l'obiettivo e vinci</p>
+        <p class="tagline">Il classico gioco di dadi</p>
       </div>
+      <div class="menu-buttons">
+        <button class="btn btn-primary" id="btn-single">Giocatore Singolo</button>
+        <button class="btn btn-secondary" id="btn-multi">Multiplayer Locale</button>
+        <button class="btn btn-ghost" id="btn-custom">Personalizza</button>
+        <button class="btn btn-ghost" id="btn-rules">Regolamento</button>
+      </div>
+      <div class="support-box">
+        <span class="support-cap">Ti piace il gioco?</span>
+        <a class="btn btn-support" href="https://ko-fi.com/geppo" target="_blank" rel="noopener noreferrer">&#9749; Offrimi un caff&egrave;</a>
+      </div>
+      <p class="credit">Ottimizzato per Safari su iPhone</p>
+    </div>
+  </section>
+
+  <!-- ===== SCHERMATA GIOCATORE SINGOLO ===== -->
+  <section id="screen-single" class="screen">
+    <div class="setup-wrap">
+      <h2>Giocatore Singolo</h2>
+      <p class="setup-sub">Sfida l'IA: scegli obiettivo e difficolt&agrave;.</p>
       <div class="target-select">
         <span class="ts-label">Obiettivo</span>
         <div class="seg" id="target-seg">
@@ -34,50 +53,33 @@
       </div>
       <div class="target-select">
         <span class="ts-label">Difficolt&agrave; IA</span>
-        <div class="seg" id="diff-seg">
+        <div class="seg seg-4" id="diff-seg">
           <button class="seg-btn" data-diff="easy"><b>Facile</b></button>
           <button class="seg-btn active" data-diff="medium"><b>Medio</b></button>
           <button class="seg-btn" data-diff="hard"><b>Difficile</b></button>
+          <button class="seg-btn" data-diff="expert"><b>Esperto</b></button>
         </div>
-        <span class="ts-hint">Solo nel Giocatore Singolo.</span>
+        <span class="ts-hint">Ogni avversario ha un potere che invoca se resta indietro. L'Esperto &egrave; Sauron: gioco perfetto + il potere dell'Anello.</span>
       </div>
-      <div class="menu-buttons">
-        <button class="btn btn-primary" id="btn-single">Giocatore Singolo</button>
-        <button class="btn btn-secondary" id="btn-multi">Multiplayer Locale</button>
-        <button class="btn btn-ghost" id="btn-custom">Personalizza</button>
-        <button class="btn btn-ghost" id="btn-history">Storico Vittorie</button>
-        <button class="btn btn-ghost" id="btn-rules">Regole</button>
-      </div>
-      <div class="support-box">
-        <span class="support-cap">Ti piace il gioco?</span>
-        <a class="btn btn-support" href="https://ko-fi.com/geppo" target="_blank" rel="noopener noreferrer">&#9749; Offrimi un caff&egrave;</a>
-      </div>
-      <p class="credit">Ottimizzato per Safari su iPhone</p>
+      <div class="hero-progress" id="hero-progress"></div>
+      <button class="btn btn-primary" id="btn-single-start">Inizia Partita</button>
+      <button class="btn btn-ghost" id="btn-single-history">Storico Vittorie</button>
+      <button class="btn btn-ghost" id="btn-single-back">Indietro</button>
     </div>
   </section>
 
   <!-- ===== SCHERMATA REGOLE ===== -->
   <section id="screen-rules" class="screen">
     <div class="rules-wrap">
-      <h2>Regole</h2>
+      <h2>Regolamento</h2>
       <div class="rules-body">
         <p><strong>Obiettivo:</strong> primo a raggiungere o superare il punteggio scelto (2.000, 5.000 o 10.000).</p>
         <p><strong>Turno:</strong> lancia 6 dadi, seleziona i dadi che fanno punti, poi metti al sicuro o rilancia i dadi rimasti per rischiare.</p>
         <p><strong>Farkle:</strong> se un lancio non produce alcun punto, perdi tutti i punti del turno.</p>
         <p><strong>Hot Dice:</strong> se usi tutti e 6 i dadi, rilanci tutti e 6 e continui il turno.</p>
-        <h3>Punteggi</h3>
-        <ul class="score-list">
-          <li><span>Singolo 1</span><b>100</b></li>
-          <li><span>Singolo 5</span><b>50</b></li>
-          <li><span>Tre 1</span><b>1000</b></li>
-          <li><span>Tre 2</span><b>200</b></li>
-          <li><span>Tre 3</span><b>300</b></li>
-          <li><span>Tre 4</span><b>400</b></li>
-          <li><span>Tre 5</span><b>500</b></li>
-          <li><span>Tre 6</span><b>600</b></li>
-          <li><span>Tre coppie</span><b>750</b></li>
-          <li><span>Scala 1-2-3-4-5-6</span><b>1000</b></li>
-        </ul>
+        <h3>Punteggio visivo</h3>
+        <p class="rules-hint">Tocca una combinazione per vedere l'esempio coi dadi.</p>
+        <div class="rules-examples" id="rules-examples"></div>
         <p class="note">Non puoi combinare dadi di lanci diversi per formare una combinazione.</p>
       </div>
       <button class="btn btn-primary" id="btn-rules-back">Indietro</button>
@@ -114,6 +116,7 @@
         <div class="chip-row" id="setup-dice2"></div>
       </div>
       <button class="btn btn-primary" id="btn-setup-start">Inizia Partita</button>
+      <button class="btn btn-ghost" id="btn-setup-history">Storico Vittorie</button>
       <button class="btn btn-ghost" id="btn-setup-back">Indietro</button>
     </div>
   </section>
@@ -138,8 +141,8 @@
   <!-- ===== SCHERMATA STORICO VITTORIE ===== -->
   <section id="screen-history" class="screen">
     <div class="history-wrap">
-      <h2>Storico Vittorie</h2>
-      <p class="setup-sub">Ultime 10 partite multiplayer, dalla pi&ugrave; recente.</p>
+      <h2 id="hist-title">Storico Vittorie</h2>
+      <p class="setup-sub" id="hist-sub">Ultime 10 partite, dalla pi&ugrave; recente.</p>
       <div class="hist-summary" id="hist-summary"></div>
       <div class="hist-list" id="hist-list"></div>
       <button class="btn btn-ghost small" id="btn-hist-clear">Svuota storico</button>
@@ -192,6 +195,7 @@
       <button class="btn btn-primary" id="btn-roll">Lancia Dadi</button>
       <button class="btn btn-bank" id="btn-bank">Metti al Sicuro</button>
     </div>
+    <button class="btn btn-hero small" id="btn-hero">&#9733; Poteri Eroe</button>
     <button class="btn btn-ghost small" id="btn-quit">Esci dalla partita</button>
   </section>
 
@@ -200,6 +204,7 @@
     <div class="over-wrap">
       <div class="trophy">&#127942;</div>
       <h2 id="winner-text">Vittoria!</h2>
+      <p class="hero-reward" id="hero-reward" style="display:none"></p>
       <div class="final-board" id="final-board"></div>
       <button class="btn btn-primary" id="btn-again">Gioca Ancora</button>
       <button class="btn btn-ghost" id="btn-over-history">Storico Vittorie</button>
@@ -207,6 +212,30 @@
       <a class="btn btn-support" href="https://ko-fi.com/geppo" target="_blank" rel="noopener noreferrer">&#9749; Offrimi un caff&egrave;</a>
     </div>
   </section>
+
+  <!-- ===== MODALE ESEMPIO (lightbox regolamento) ===== -->
+  <div id="example-modal" class="modal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-dice" id="modal-dice"></div>
+      <h3 id="modal-title"></h3>
+      <p id="modal-desc"></p>
+      <button class="btn btn-primary" id="modal-close">Chiudi</button>
+    </div>
+  </div>
+
+  <!-- ===== MODALE POTERI DELL'EROE ===== -->
+  <div id="hero-modal" class="modal" aria-hidden="true">
+    <div class="modal-card hero-card">
+      <h3>Poteri dell'Eroe</h3>
+      <p class="hero-note" id="hero-note">Puoi usare 1 potere per partita.</p>
+      <div class="hero-list" id="hero-list"></div>
+      <div class="hero-values" id="hero-values" style="display:none">
+        <span>Scegli il valore del dado:</span>
+        <div class="hv-row" id="hv-row"></div>
+      </div>
+      <button class="btn btn-primary" id="hero-close">Chiudi</button>
+    </div>
+  </div>
 
 </div>
 <script src="script.js"></script>
