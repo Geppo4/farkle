@@ -33,7 +33,111 @@ const AI_LEVELS = {
   hard:   { risk: 1.0, lazy: 0.0 },
 };
 
-const DIFF_LABEL = { easy: 'Facile', medium: 'Medio', hard: 'Difficile' };
+const DIFF_LABEL = { easy: 'Facile', medium: 'Medio', hard: 'Difficile', expert: 'Esperto' };
+
+/* ---- Livello "Esperto": IA a gioco perfetto ----
+   DP_VALUE[d][t/50] = valore atteso del turno giocando in modo OTTIMALE, con
+   d dadi ancora da lanciare e t punti già accumulati. Tabella precalcolata
+   offline tramite programmazione dinamica (f(6,0) = 505 punti/turno). */
+const DP_VALUE = [null,[189,202,217,231,246,260,275,290,304,319,334,350,365,380,395,410,426,441,457,473,488,504,519,535,551,566,582,598,613,629,645,661,676,692,708,724,740,755,771,787,803,819,835,851,867,883,899,915,931,947,963,979,995,1011,1027,1043,1059,1076,1092,1108,1124,1141,1157,1173,1189,1206,1222,1238,1254,1271,1287,1303,1319,1336,1352,1368,1384,1401,1417,1433,1449,1466,1482,1498,1514,1530,1547,1563,1579,1595,1611,1628,1644,1660,1676,1693,1709,1725,1741,1756,1773],[163,174,185,197,214,239,266,293,320,347,375,402,429,456,484,511,539,566,593,621,648,676,703,731,758,785,813,840,868,895,923,950,978,1005,1033,1060,1088,1115,1143,1170,1198,1225,1253,1280,1308,1336,1363,1391,1418,1446,1473,1501,1529,1556,1584,1611,1639,1667,1694,1722,1750,1777,1805,1833,1860,1888,1915,1943,1971,1998,2026,2054,2081,2109,2137,2164,2192,2219,2247,2275,2302,2330,2358,2385,2413,2440,2468,2496,2523,2551,2579,2606,2634,2661,2689,2717,2744,2772,2799,2827,2855],[177,187,201,223,255,291,327,363,399,435,470,506,542,578,614,650,686,722,758,794,830,866,902,938,973,1009,1045,1081,1117,1153,1189,1225,1261,1297,1333,1369,1405,1441,1477,1513,1549,1585,1621,1657,1693,1729,1765,1801,1837,1873,1909,1945,1981,2017,2053,2089,2125,2162,2198,2234,2270,2306,2342,2378,2414,2450,2486,2522,2558,2594,2630,2666,2702,2738,2774,2810,2846,2882,2918,2954,2990,3026,3062,3099,3135,3171,3207,3243,3279,3315,3351,3387,3423,3459,3495,3531,3567,3603,3639,3675,3710],[219,239,268,302,338,375,412,451,493,535,577,619,661,703,745,787,829,871,913,955,997,1039,1081,1123,1165,1208,1250,1292,1334,1376,1418,1460,1502,1544,1586,1628,1670,1712,1754,1796,1838,1880,1922,1964,2006,2049,2091,2133,2175,2217,2259,2301,2343,2385,2427,2469,2511,2553,2596,2638,2680,2722,2764,2806,2848,2890,2932,2974,3016,3058,3101,3143,3185,3227,3269,3311,3353,3395,3437,3479,3521,3563,3606,3648,3690,3732,3774,3816,3858,3900,3942,3984,4026,4068,4110,4152,4194,4236,4278,4320,4362],[313,346,383,420,458,497,538,581,623,665,707,749,792,836,880,923,967,1011,1056,1101,1147,1193,1239,1285,1332,1378,1424,1470,1516,1562,1608,1654,1700,1746,1792,1838,1885,1931,1977,2023,2069,2115,2161,2207,2253,2299,2346,2392,2438,2484,2530,2576,2622,2668,2714,2761,2807,2853,2899,2945,2991,3037,3083,3129,3176,3222,3268,3314,3360,3406,3452,3498,3544,3591,3637,3683,3729,3775,3821,3867,3913,3959,4005,4052,4098,4144,4190,4236,4282,4328,4374,4420,4466,4512,4559,4605,4651,4697,4742,4789,4835],[505,546,587,628,671,715,759,803,847,891,936,981,1026,1072,1117,1162,1208,1254,1301,1347,1394,1441,1488,1535,1582,1629,1675,1722,1769,1816,1863,1910,1958,2005,2053,2100,2148,2195,2242,2290,2337,2385,2432,2480,2528,2576,2624,2672,2720,2768,2817,2865,2913,2961,3009,3057,3105,3154,3203,3252,3300,3349,3398,3446,3495,3544,3593,3641,3690,3739,3788,3836,3885,3934,3983,4031,4080,4129,4177,4226,4275,4324,4372,4421,4470,4518,4567,4616,4664,4713,4761,4810,4859,4907,4956,5005,5053,5102,5151,5199,5245]];
+function dpValue(d, t){
+  if(t < 0) return t;
+  const i = t / 50;                       // i punteggi sono sempre multipli di 50
+  if(i > 100 || !DP_VALUE[d]) return t;   // oltre la tabella conviene bancare
+  return DP_VALUE[d][i];
+}
+
+/* Scelta ottimale dei dadi da tenere per l'Esperto: tra TUTTI i sottoinsiemi
+   punteggianti del lancio, sceglie quello che massimizza il valore atteso
+   (a volte conviene NON prendere un 5 isolato per tenere più dadi). */
+function expertPick(values, turnScore, alreadySet){
+  const c = countFaces(values);
+  const k = [0,0,0,0,0,0,0];
+  let best = null;
+  (function pick(face){
+    if(face === 7){
+      let used = 0; for(let x=1;x<=6;x++) used += k[x];
+      if(used === 0) return;
+      const g = scoreCounts(k.slice(), used);
+      if(g < 0) return; // i dadi tenuti devono fare tutti punti
+      const newSet = alreadySet + used;
+      const rollDice = (newSet === 6) ? 6 : 6 - newSet; // hot dice → 6
+      const value = Math.max(turnScore + g, dpValue(rollDice, turnScore + g));
+      if(!best || value > best.value){ best = { keep: k.slice(), score: g, value }; }
+      return;
+    }
+    for(let x=0; x<=c[face]; x++){ k[face] = x; pick(face+1); }
+    k[face] = 0;
+  })(1);
+  const need = best.keep.slice();
+  const indices = [];
+  for(let i=0;i<values.length;i++){ if(need[values[i]] > 0){ indices.push(i); need[values[i]]--; } }
+  return { indices, score: best.score };
+}
+
+/* Villain dell'avversario IA (al posto di "CPU · Difficile"): ognuno ha un
+   nome, un avatar e un POTERE. I poteri (palette estensibile) scattano solo
+   quando il villain è in SVANTAGGIO, e la loro intensità scala col livello,
+   così i Facili restano battibili. Tipi: 'save' (evita il Farkle, la firma di
+   Sauron), 'luck' (trasforma un dado in un 1), 'bonus' (punti extra al bank). */
+const VILLAINS = {
+  easy: [
+    { name: 'Pinguino',   avatar: 'pinguino',   power: { type: 'bonus', label: 'COLPO BASSO' } },
+    { name: 'Gargamella', avatar: 'gargamella', power: { type: 'bonus', label: 'POZIONE MALEFICA' } },
+    { name: 'Jafar',      avatar: 'jafar',      power: { type: 'bonus', label: 'MAGIA DI JAFAR' } },
+  ],
+  medium: [
+    { name: 'Joker',  avatar: 'joker',  power: { type: 'luck',  label: 'CAOS!' } },
+    { name: 'Loki',   avatar: 'loki',   power: { type: 'bonus', label: 'INGANNO DI LOKI' } },
+    { name: 'Ultron', avatar: 'ultron', power: { type: 'luck',  label: 'PROTOCOLLO ULTRON' } },
+  ],
+  hard: [
+    { name: 'Darth Vader', avatar: 'vader',  power: { type: 'luck', label: 'IL LATO OSCURO' } },
+    { name: 'Venom',       avatar: 'venom',  power: { type: 'luck', label: 'SIAMO VENOM' } },
+    { name: 'Thanos',      avatar: 'thanos', power: { type: 'luck', label: 'INEVITABILE' } },
+  ],
+  expert: [
+    { name: 'Sauron', avatar: 'sauron', power: { type: 'save', label: "IL POTERE DELL'ANELLO" } },
+  ],
+};
+function pickVillain(difficulty){
+  const pool = VILLAINS[difficulty] || VILLAINS.medium;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+// Avatar dei villain (SVG stilizzati, inseriti offline).
+const VILLAIN_SVG = {"sauron":"<svg viewBox=\"0 0 48 48\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"24\" cy=\"24\" r=\"24\" fill=\"#0a0a0a\"/><ellipse cx=\"24\" cy=\"24\" rx=\"18\" ry=\"8.5\" fill=\"#c81e00\"/><ellipse cx=\"24\" cy=\"24\" rx=\"14.5\" ry=\"6.5\" fill=\"#ff7a1a\"/><ellipse cx=\"24\" cy=\"24\" rx=\"10\" ry=\"5\" fill=\"#ffd24a\"/><ellipse cx=\"24\" cy=\"24\" rx=\"2.8\" ry=\"9\" fill=\"#100800\"/></svg>","joker":"<svg viewBox=\"0 0 48 48\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"24\" cy=\"24\" r=\"24\" fill=\"#5b2a86\"/><ellipse cx=\"13\" cy=\"15\" rx=\"5\" ry=\"7\" fill=\"#2fae4e\"/><ellipse cx=\"35\" cy=\"15\" rx=\"5\" ry=\"7\" fill=\"#2fae4e\"/><ellipse cx=\"24\" cy=\"11\" rx=\"5\" ry=\"6\" fill=\"#2fae4e\"/><circle cx=\"24\" cy=\"26\" r=\"12.5\" fill=\"#eef0e0\"/><circle cx=\"20\" cy=\"24\" r=\"1.7\" fill=\"#222\"/><circle cx=\"28\" cy=\"24\" r=\"1.7\" fill=\"#222\"/><path d=\"M17 29 q7 8 14 0\" stroke=\"#d81e34\" stroke-width=\"2.6\" fill=\"none\" stroke-linecap=\"round\"/></svg>","loki":"<svg viewBox=\"0 0 48 48\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"24\" cy=\"24\" r=\"24\" fill=\"#1f6b3a\"/><circle cx=\"24\" cy=\"27\" r=\"9\" fill=\"#f0c98a\"/><path d=\"M15 24 a9 9 0 0 1 18 0 l0 -3 a9 10 0 0 0 -18 0 z\" fill=\"#e8b54a\"/><path d=\"M15 22 q-6 -6 -3 -15 q4 6 6 13z\" fill=\"#e8b54a\"/><path d=\"M33 22 q6 -6 3 -15 q-4 6 -6 13z\" fill=\"#e8b54a\"/><circle cx=\"20\" cy=\"27\" r=\"1.4\" fill=\"#3a2a1a\"/><circle cx=\"28\" cy=\"27\" r=\"1.4\" fill=\"#3a2a1a\"/></svg>","ultron":"<svg viewBox=\"0 0 48 48\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"24\" cy=\"24\" r=\"24\" fill=\"#33465e\"/><path d=\"M14 15 h20 v13 q0 8 -10 10 q-10 -2 -10 -10 z\" fill=\"#c7ced9\"/><path d=\"M17 21 l6 3 -6 1z\" fill=\"#ff3b3b\"/><path d=\"M31 21 l-6 3 6 1z\" fill=\"#ff3b3b\"/><g stroke=\"#66707e\" stroke-width=\"1\"><line x1=\"20\" y1=\"30\" x2=\"20\" y2=\"35\"/><line x1=\"24\" y1=\"30\" x2=\"24\" y2=\"36\"/><line x1=\"28\" y1=\"30\" x2=\"28\" y2=\"35\"/></g></svg>","vader":"<svg viewBox=\"0 0 48 48\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"24\" cy=\"24\" r=\"24\" fill=\"#0c0c0c\"/><path d=\"M12 21 a12 12 0 0 1 24 0 v3 q0 11 -12 15 q-12 -4 -12 -15 z\" fill=\"#161616\" stroke=\"#3a3a3a\" stroke-width=\"1\"/><path d=\"M16 23 l6 2 -1 4 -5 -2z\" fill=\"#333\"/><path d=\"M32 23 l-6 2 1 4 5 -2z\" fill=\"#333\"/><rect x=\"20\" y=\"31\" width=\"8\" height=\"6\" rx=\"1\" fill=\"#2a2a2a\"/><g stroke=\"#0c0c0c\" stroke-width=\"0.8\"><line x1=\"22\" y1=\"31\" x2=\"22\" y2=\"37\"/><line x1=\"24\" y1=\"31\" x2=\"24\" y2=\"37\"/><line x1=\"26\" y1=\"31\" x2=\"26\" y2=\"37\"/></g></svg>","venom":"<svg viewBox=\"0 0 48 48\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"24\" cy=\"24\" r=\"24\" fill=\"#070707\"/><path d=\"M14 19 C18 16 23 20 22.5 24 C18 24.5 14 23.5 14 19Z\" fill=\"#f0f0f0\"/><path d=\"M34 19 C30 16 25 20 25.5 24 C30 24.5 34 23.5 34 19Z\" fill=\"#f0f0f0\"/><path d=\"M13 29 q11 6 22 0 l-2.5 4 -2 -3 -2 3 -2 -3 -2 3 -2 -3 -2 3 -2.5 -4z\" fill=\"#efeff2\"/></svg>","thanos":"<svg viewBox=\"0 0 48 48\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"24\" cy=\"24\" r=\"24\" fill=\"#6a3ea1\"/><circle cx=\"24\" cy=\"26\" r=\"12\" fill=\"#8b6bd0\"/><path d=\"M12 20 a12 12 0 0 1 24 0 l-3 3 a9 9 0 0 0 -18 0 z\" fill=\"#d9a441\"/><path d=\"M17 23 q7 -2 14 0\" stroke=\"#3f2668\" stroke-width=\"1.8\" fill=\"none\"/><circle cx=\"20\" cy=\"26\" r=\"1.5\" fill=\"#2a1a44\"/><circle cx=\"28\" cy=\"26\" r=\"1.5\" fill=\"#2a1a44\"/><path d=\"M22 34 q2 2 4 0\" stroke=\"#5a3a90\" stroke-width=\"1.4\" fill=\"none\"/></svg>","pinguino":"<svg viewBox=\"0 0 48 48\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"24\" cy=\"24\" r=\"24\" fill=\"#16273f\"/><circle cx=\"24\" cy=\"28\" r=\"9\" fill=\"#f0d9c0\"/><rect x=\"14\" y=\"9\" width=\"20\" height=\"3.5\" rx=\"1\" fill=\"#111\"/><rect x=\"18\" y=\"1\" width=\"12\" height=\"8\" fill=\"#111\"/><path d=\"M24 27 l5 3 -5 1z\" fill=\"#d9a066\"/><circle cx=\"20\" cy=\"27\" r=\"1.4\" fill=\"#222\"/><circle cx=\"29\" cy=\"27\" r=\"3.6\" fill=\"none\" stroke=\"#e8c24a\" stroke-width=\"1.3\"/></svg>","gargamella":"<svg viewBox=\"0 0 48 48\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"24\" cy=\"24\" r=\"24\" fill=\"#3a2a18\"/><circle cx=\"24\" cy=\"23\" r=\"10.5\" fill=\"#e8c9a0\"/><path d=\"M24 20 q4.5 4 1 8 q-3 0 -3 -2z\" fill=\"#d9b083\"/><path d=\"M17 18 l5 2M31 18 l-5 2\" stroke=\"#2a2a2a\" stroke-width=\"2\"/><circle cx=\"20\" cy=\"21\" r=\"1.3\" fill=\"#222\"/><circle cx=\"28\" cy=\"21\" r=\"1.3\" fill=\"#222\"/><path d=\"M20 31 q4 6 8 0 q-4 3 -8 0z\" fill=\"#2a2a2a\"/></svg>","jafar":"<svg viewBox=\"0 0 48 48\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"24\" cy=\"24\" r=\"24\" fill=\"#5a1220\"/><circle cx=\"24\" cy=\"27\" r=\"8\" fill=\"#d9b58a\"/><path d=\"M13 19 a11 10 0 0 1 22 0 q-11 -6 -22 0z\" fill=\"#111\"/><ellipse cx=\"24\" cy=\"14\" rx=\"11\" ry=\"4\" fill=\"#7a1a2a\"/><path d=\"M24 13 q1 -8 3.5 -9.5 q-1.5 6 -1 9.5z\" fill=\"#e8c24a\"/><circle cx=\"24\" cy=\"13\" r=\"1.7\" fill=\"#e8c24a\"/><path d=\"M18 24 l4 1M30 24 l-4 1\" stroke=\"#1a1a1a\" stroke-width=\"1.6\"/><path d=\"M24 31 l-1.2 6 2.4 0z\" fill=\"#1a1a1a\"/></svg>"};
+
+/* Poteri dei villain: scattano solo se il villain è in svantaggio; intensità
+   crescente col livello. Tarati via simulazione (Facile resta < 50%). */
+const POWER_INTENSITY = { easy: 0.15, medium: 0.35, hard: 0.55, expert: 0.70 };
+const POWER_BONUS = 150;          // punti extra del potere 'bonus'
+const POWER_MAX_USES = 2;         // usi massimi per turno di un potere
+
+// Probabilità che il potere scatti ora (0 se il villain è pari o in vantaggio).
+function powerChance(){
+  const cpu = state.players[1];
+  if(!cpu || !cpu.power) return 0;
+  const gap = state.players[0].total - cpu.total; // umano − villain
+  if(gap <= 0) return 0;
+  const intensity = POWER_INTENSITY[state.difficulty] || 0;
+  return intensity * Math.min(1, gap / (state.target * 0.30));
+}
+// 'luck': trasforma un dado non-punteggiante (2/3/4/6) in un 1.
+function applyLuck(activeDice){
+  for(const d of activeDice){
+    if(d.value === 2 || d.value === 3 || d.value === 4 || d.value === 6){ d.value = 1; return true; }
+  }
+  return false;
+}
+// 'save': rilancia i dadi finché non fanno punti (evita il Farkle).
+function ringReroll(activeDice){
+  let values;
+  do {
+    for(const d of activeDice){ d.value = 1 + Math.floor(Math.random() * 6); }
+    values = activeDice.map(d => d.value);
+  } while(!hasAnyScore(values));
+}
 
 /* =========================================================
    PERSONALIZZAZIONE — avatar e temi dado (estensibili)
@@ -94,27 +198,88 @@ function savePrefs(){
   try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch(e){}
 }
 
-/* --- Storico vittorie (solo multiplayer): ultime 10, più recente in cima --- */
-const HISTORY_KEY = 'farkle.history.v1';
+/* --- Storico vittorie: due archivi separati (multi/single), ultime 10 ognuno,
+   più recente in cima. La chiave 'multi' resta 'farkle.history.v1' per non
+   perdere lo storico già salvato dagli utenti. --- */
+const HISTORY_KEYS = { multi: 'farkle.history.v1', single: 'farkle.history.single.v1' };
 const HISTORY_MAX = 10;
 
-function loadHistory(){
+function loadHistory(kind){
   try {
-    const s = localStorage.getItem(HISTORY_KEY);
+    const s = localStorage.getItem(HISTORY_KEYS[kind]);
     const arr = s ? JSON.parse(s) : [];
     return Array.isArray(arr) ? arr : [];
   } catch(e){ return []; }
 }
-function saveHistory(arr){
-  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(arr)); } catch(e){}
+function saveHistory(kind, arr){
+  try { localStorage.setItem(HISTORY_KEYS[kind], JSON.stringify(arr)); } catch(e){}
 }
 // inserisce una nuova partita in testa e mantiene solo le ultime HISTORY_MAX
-function recordMatch(entry){
-  const arr = loadHistory();
+function recordMatch(kind, entry){
+  const arr = loadHistory(kind);
   arr.unshift(entry);
-  saveHistory(arr.slice(0, HISTORY_MAX));
+  saveHistory(kind, arr.slice(0, HISTORY_MAX));
 }
-function clearHistory(){ saveHistory([]); }
+function clearHistory(kind){ saveHistory(kind, []); }
+
+/* =========================================================
+   POTERI DELL'EROE (progressione a strisce di vittorie)
+   Ogni 5 vittorie consecutive a una difficoltà si guadagna una carica del
+   suo potere (cumulabile, con tetto). Con una striscia da 5 su TUTTE e 4 le
+   difficoltà si ottiene il Super potere (non cumulabile). Le cariche valgono
+   per qualsiasi partita. Limite di sicurezza: 1 potere usato per partita.
+   ========================================================= */
+const HERO_POWERS = {
+  double: { label: 'Punti Doppi',       icon: '×2', desc: 'Raddoppia i punti quando metti al sicuro.' },
+  change: { label: 'Cambia Dado',       icon: '⟳',  desc: 'Imposta un dado sul valore che vuoi.' },
+  shield: { label: 'Scudo',             icon: '⛨',  desc: 'Annulla il prossimo Farkle del turno.' },
+  reroll: { label: 'Rilancio Fortunato', icon: '✦', desc: 'Il prossimo lancio non può fare Farkle.' },
+  super:  { label: "Colpo dell'Eroe",   icon: '★',  desc: 'Un turno intero: niente Farkle e punti doppi.' },
+};
+const POWER_FROM = { easy: 'double', medium: 'change', hard: 'shield', expert: 'reroll' };
+const STREAK_STEP = 5;   // vittorie consecutive per una carica
+const CHARGE_CAP = 5;    // tetto cariche per potere
+const HERO_KEY = 'farkle.hero.v1';
+
+const hero = {
+  streak:    { easy: 0, medium: 0, hard: 0, expert: 0 },
+  charges:   { double: 0, change: 0, shield: 0, reroll: 0, super: 0 },
+  superFlag: { easy: false, medium: false, hard: false, expert: false },
+};
+function loadHero(){
+  try {
+    const s = localStorage.getItem(HERO_KEY);
+    if(s){ const o = JSON.parse(s);
+      Object.assign(hero.streak, o.streak || {});
+      Object.assign(hero.charges, o.charges || {});
+      Object.assign(hero.superFlag, o.superFlag || {});
+    }
+  } catch(e){}
+}
+function saveHero(){ try { localStorage.setItem(HERO_KEY, JSON.stringify(hero)); } catch(e){} }
+
+/* Aggiorna la progressione a fine partita single. Ritorna la lista dei poteri
+   guadagnati (per la notifica a schermo), oppure []. */
+function updateHeroProgress(won){
+  const d = state.difficulty;
+  const earned = [];
+  if(won){
+    hero.streak[d]++;
+    if(hero.streak[d] % STREAK_STEP === 0){
+      const pk = POWER_FROM[d];
+      if(hero.charges[pk] < CHARGE_CAP){ hero.charges[pk]++; earned.push(pk); }
+      hero.superFlag[d] = true;
+      if(hero.superFlag.easy && hero.superFlag.medium && hero.superFlag.hard && hero.superFlag.expert){
+        if(hero.charges.super < 1){ hero.charges.super = 1; earned.push('super'); }
+        hero.superFlag = { easy: false, medium: false, hard: false, expert: false };
+      }
+    }
+  } else {
+    hero.streak[d] = 0;
+  }
+  saveHero();
+  return earned;
+}
 
 function formatDate(ts){
   try {
@@ -304,6 +469,16 @@ const state = {
   phase: 'roll',           // 'roll' = serve lanciare | 'action' = dadi in tavolo
   busy: false,             // blocca input durante animazioni / turno IA
   running: false,          // true durante una partita; ferma i callback dopo l'uscita
+  saveUsed: 0,             // usi del potere 'save' nel turno corrente
+  luckUsed: 0,             // usi del potere 'luck' nel turno corrente
+  bonusUsed: false,        // potere 'bonus' già usato nel turno corrente
+  // --- poteri dell'eroe attivi (giocatore umano) ---
+  heroDouble: false,       // raddoppia i punti al bank
+  heroShield: false,       // annulla il prossimo Farkle
+  heroLucky: false,        // prossimo lancio senza Farkle
+  heroSuper: false,        // turno "Colpo dell'Eroe" (no Farkle + doppio)
+  heroChangeValue: 0,      // valore scelto per "Cambia Dado" (0 = non attivo)
+  heroUsedThisMatch: false,// un solo potere per partita
   finalRound: false,
   finalStarter: -1,
   gameOver: false,
@@ -313,6 +488,7 @@ const state = {
 
 const screens = {
   menu:    document.getElementById('screen-menu'),
+  single:  document.getElementById('screen-single'),
   rules:   document.getElementById('screen-rules'),
   setup:   document.getElementById('screen-setup'),
   custom:  document.getElementById('screen-custom'),
@@ -394,6 +570,7 @@ function startGame(mode, players){
     name: p.name, total: 0,
     avatar: p.avatar || 'male',
     dice: DICE_THEMES[p.dice] ? p.dice : 'classic',
+    power: p.power || null,
   }));
   state.current = 0;
   state.finalRound = false;
@@ -401,6 +578,7 @@ function startGame(mode, players){
   state.gameOver = false;
   state.busy = false;
   state.running = true;
+  state.heroUsedThisMatch = false;
 
   // header: nomi e avatar (con anello del colore dadi del giocatore)
   document.getElementById('pc-name-0').textContent = state.players[0].name;
@@ -415,15 +593,24 @@ function startGame(mode, players){
 }
 
 function setAvatar(elId, avatarId, ringColor){
-  const a = AVATARS[avatarId] || AVATARS.male;
+  const svg = (AVATARS[avatarId] && AVATARS[avatarId].svg) || VILLAIN_SVG[avatarId] || AVATARS.male.svg;
   const el = document.getElementById(elId);
-  el.innerHTML = a.svg;
+  el.innerHTML = svg;
   el.style.boxShadow = ringColor ? `0 0 0 2px ${ringColor}` : 'none';
 }
 
 function beginTurn(){
   state.busy = false;
   state.turnScore = 0;
+  state.saveUsed = 0;
+  state.luckUsed = 0;
+  state.bonusUsed = false;
+  // i poteri "armati" non si trascinano tra i turni
+  state.heroDouble = false;
+  state.heroShield = false;
+  state.heroLucky = false;
+  state.heroSuper = false;
+  state.heroChangeValue = 0;
   state.phase = 'roll';
   // applica il tema dado del giocatore di turno (colori indipendenti)
   applyDiceTheme(state.players[state.current].dice);
@@ -515,6 +702,7 @@ function setButtons(){
   } else {
     btnRoll.textContent = 'Rilancia';
   }
+  updateHeroButton();
 }
 
 /* ---------- Interazione dadi ---------- */
@@ -524,6 +712,24 @@ function onDieTap(i){
   if(state.mode === 'single' && state.current === 1) return; // turno IA
   const die = state.dice[i];
   if(die.status !== 'active') return;
+
+  // POTERE EROE 'Cambia Dado': imposta il dado toccato sul valore scelto
+  if(state.heroChangeValue > 0){
+    if(!state.heroUsedThisMatch && hero.charges.change > 0){
+      die.value = state.heroChangeValue;
+      state.heroChangeValue = 0;
+      hero.charges.change--;
+      state.heroUsedThisMatch = true;
+      saveHero();
+      renderDice(false);
+      updateHud();
+      showBanner('CAMBIA DADO', 'hero');
+      setMessage('Dado impostato!', 'good');
+      return;
+    }
+    state.heroChangeValue = 0; // non più valido: prosegui come selezione normale
+  }
+
   die.selected = !die.selected;
   renderDice(false);
   // feedback se selezione non valida
@@ -626,13 +832,38 @@ function doRoll(){
       d.selected = false;
     }
   }
+  // POTERI EROE 'reroll'/'super': garantiscono un lancio che fa punti
+  if(state.heroLucky || state.heroSuper){
+    const rolled = state.dice.filter(d => d.status === 'active');
+    let guard = 0;
+    while(!hasAnyScore(rolled.map(d => d.value)) && guard++ < 300){
+      for(const d of rolled){ d.value = 1 + Math.floor(Math.random() * 6); }
+    }
+    if(state.heroLucky){ state.heroLucky = false; }
+  }
+
   state.phase = 'action';
   updateHud();
 
   animateRoll(() => {
     if(!state.running) return; // uscita dalla partita durante l'animazione
-    const active = state.dice.filter(d => d.status === 'active').map(d => d.value);
-    if(!hasAnyScore(active)){
+    const activeDice = state.dice.filter(d => d.status === 'active');
+    if(!hasAnyScore(activeDice.map(d => d.value))){
+      // POTERE EROE 'shield': annulla il Farkle rilanciando in salvo
+      if(state.heroShield){
+        state.heroShield = false;
+        ringReroll(activeDice);
+        showBanner('SCUDO', 'hero');
+        renderDice(true);
+        updateHud();
+        setTimeout(() => {
+          if(!state.running) return;
+          state.busy = false;
+          setMessage('Scudo! Seleziona i dadi che fanno punti.', 'good');
+          setButtons();
+        }, 750);
+        return;
+      }
       handleFarkle();
     } else {
       state.busy = false;
@@ -685,6 +916,13 @@ function onBank(){
 
 function bankAndEnd(){
   const p = state.players[state.current];
+  // POTERI EROE 'double'/'super': raddoppiano i punti al momento del bank
+  if(state.heroDouble || state.heroSuper){
+    state.turnScore *= 2;
+    state.heroDouble = false;
+    state.heroSuper = false;
+    showBanner('PUNTI DOPPI', 'hero');
+  }
   p.total += state.turnScore;
   updateHud();
   setMessage(`${p.name} mette al sicuro ${formatNum(state.turnScore)} punti. Totale: ${formatNum(p.total)}.`, 'good');
@@ -729,10 +967,9 @@ function finishGame(){
   const winner = ranking[0];
   document.getElementById('winner-text').textContent = `${winner.name} vince!`;
 
-  // registra la partita nello storico (solo multiplayer)
-  const overHistBtn = document.getElementById('btn-over-history');
+  // registra la partita nello storico (sia multiplayer sia single player)
   if(state.mode === 'multi'){
-    recordMatch({
+    recordMatch('multi', {
       winner: winner.name,
       winnerAvatar: winner.avatar,
       score: winner.total,
@@ -740,9 +977,40 @@ function finishGame(){
       opponentScore: ranking[1].total,
       ts: Date.now(),
     });
-    overHistBtn.style.display = '';
   } else {
-    overHistBtn.style.display = 'none';
+    // single: il giocatore umano è players[0], la CPU è players[1]
+    recordMatch('single', {
+      won: state.players[0].total >= state.players[1].total,
+      playerScore: state.players[0].total,
+      cpuScore: state.players[1].total,
+      opponent: state.players[1].name,
+      difficulty: state.difficulty,
+      target: state.target,
+      ts: Date.now(),
+    });
+  }
+  // il pulsante storico a fine partita è sempre disponibile
+  document.getElementById('btn-over-history').style.display = '';
+
+  // progressione eroe (solo single): aggiorna strisce e cariche
+  const rewardEl = document.getElementById('hero-reward');
+  if(state.mode === 'single'){
+    const humanWon = state.players[0].total >= state.players[1].total;
+    const earned = updateHeroProgress(humanWon);
+    if(earned.length){
+      rewardEl.innerHTML = '🏅 Nuovo potere: ' +
+        earned.map(k => `<b>${HERO_POWERS[k].label}</b>`).join(', ');
+      rewardEl.style.display = '';
+    } else {
+      const d = state.difficulty;
+      const toNext = STREAK_STEP - (hero.streak[d] % STREAK_STEP);
+      rewardEl.innerHTML = humanWon
+        ? `Striscia ${DIFF_LABEL[d]}: ${hero.streak[d]} — ancora ${toNext} per un potere!`
+        : '';
+      rewardEl.style.display = humanWon ? '' : 'none';
+    }
+  } else {
+    rewardEl.style.display = 'none';
   }
 
   const board = document.getElementById('final-board');
@@ -807,12 +1075,38 @@ function cpuRoll(){
 
   animateRoll(() => {
     if(!state.running) return; // partita abbandonata durante l'animazione
-    const active = state.dice.filter(d => d.status === 'active').map(d => d.value);
-    if(!hasAnyScore(active)){
-      handleFarkle();
-      return;
+    const activeDice = state.dice.filter(d => d.status === 'active');
+    const power = state.players[1] && state.players[1].power;
+
+    // POTERE 'luck': trasforma un dado in un 1 (aiuto se in svantaggio)
+    let delay = 0;
+    if(power && power.type === 'luck' && state.luckUsed < POWER_MAX_USES &&
+       Math.random() < powerChance() && applyLuck(activeDice)){
+      state.luckUsed++;
+      showBanner(power.label, 'ring');
+      renderDice(true);
+      delay = 750;
     }
-    cpuDecide();
+
+    setTimeout(() => {
+      if(!state.running) return;
+      if(!hasAnyScore(activeDice.map(d => d.value))){
+        // POTERE 'save' (Anello di Sauron): evita il Farkle in svantaggio
+        if(power && power.type === 'save' && state.saveUsed < POWER_MAX_USES &&
+           Math.random() < powerChance()){
+          state.saveUsed++;
+          ringReroll(activeDice);
+          showBanner(power.label, 'ring');
+          renderDice(true);
+          updateHud();
+          setTimeout(() => { if(state.running) cpuDecide(); }, 750);
+          return;
+        }
+        handleFarkle();
+        return;
+      }
+      cpuDecide();
+    }, delay);
   });
 }
 
@@ -822,9 +1116,13 @@ function cpuDecide(){
   state.dice.forEach((d, i) => { if(d.status === 'active') activeIdx.push(i); });
   const activeValues = activeIdx.map(i => state.dice[i].value);
 
-  // L'IA dei livelli più bassi a volte sceglie in modo "pigro" (sub-ottimale).
+  const expert = state.difficulty === 'expert';
   let pick;
-  if(Math.random() < AI_LEVELS[state.difficulty].lazy){
+  if(expert){
+    // gioco perfetto: scelta ottimale dei dadi da tenere
+    pick = expertPick(activeValues, state.turnScore, setCount());
+  } else if(Math.random() < AI_LEVELS[state.difficulty].lazy){
+    // L'IA dei livelli più bassi a volte sceglie in modo "pigro" (sub-ottimale).
     pick = lazyScoringSelection(activeValues);
     if(pick.score <= 0) pick = greedyScoringSelection(activeValues);
   } else {
@@ -849,7 +1147,21 @@ function cpuDecide(){
     // decisione: continuare o mettere al sicuro?
     let keepGoing;
 
-    if(hotDice){
+    if(expert){
+      if(state.finalRound){
+        // Gioca per vincere: se bancando supera il leader, incassa e vince;
+        // altrimenti DEVE continuare a rischiare — bancare un punteggio
+        // perdente sarebbe una sconfitta certa (rilanciare dà comunque una
+        // possibilità). Validato per simulazione: vince 52–54% vs la vecchia
+        // logica, che invece a volte si arrendeva.
+        const leader = Math.max(...state.players.map(p => p.total));
+        keepGoing = !(total + state.turnScore > leader);
+      } else {
+        // gioco perfetto: rilancia se il valore atteso supera il bancare ora
+        // (dpValue gestisce da sé anche gli hot dice, diceLeft = 6).
+        keepGoing = dpValue(diceLeft, state.turnScore) > state.turnScore;
+      }
+    } else if(hotDice){
       keepGoing = true; // rilancio gratuito di tutti e 6
     } else if(state.finalRound){
       // deve superare il punteggio più alto avversario
@@ -870,7 +1182,17 @@ function cpuDecide(){
       setMessage(`${state.players[1].name} rischia e rilancia (${formatNum(state.turnScore)} pt nel turno).`, 'warn');
       setTimeout(cpuRoll, 1000);
     } else {
-      bankAndEnd();
+      // POTERE 'bonus': punti extra al momento del bank (se in svantaggio)
+      const power = state.players[1] && state.players[1].power;
+      if(power && power.type === 'bonus' && !state.bonusUsed && Math.random() < powerChance()){
+        state.bonusUsed = true;
+        state.turnScore += POWER_BONUS;
+        updateHud();
+        showBanner(power.label, 'ring');
+        setTimeout(() => { if(state.running) bankAndEnd(); }, 1000);
+      } else {
+        bankAndEnd();
+      }
     }
   }, 900);
 }
@@ -984,19 +1306,70 @@ function buildSetupCustomization(){
    STORICO VITTORIE (UI)
    ========================================================= */
 
-function buildHistoryScreen(){
-  const hist = loadHistory();
+let historyKind = 'multi';    // tipo di storico mostrato ('multi' | 'single')
+let historyReturn = 'menu';   // schermata a cui torna il pulsante "Indietro"
+
+// Apre lo storico del tipo indicato, ricordando da dove si è arrivati.
+function openHistory(kind, returnTo){
+  historyKind = kind;
+  historyReturn = returnTo;
+  buildHistoryScreen(kind);
+  showScreen('history');
+}
+
+function buildHistoryScreen(kind){
+  const titleEl = document.getElementById('hist-title');
+  const subEl = document.getElementById('hist-sub');
   const summaryEl = document.getElementById('hist-summary');
   const listEl = document.getElementById('hist-list');
   summaryEl.innerHTML = '';
   listEl.innerHTML = '';
 
+  const hist = loadHistory(kind);
+
+  if(kind === 'single'){
+    titleEl.textContent = 'Storico — Giocatore Singolo';
+    subEl.textContent = "Le tue ultime 10 sfide contro l'IA.";
+    if(hist.length === 0){
+      listEl.innerHTML = "<div class=\"hist-empty\">Nessuna partita registrata.<br>Gioca contro l'IA per iniziare a tracciare i tuoi punteggi.</div>";
+      return;
+    }
+    // statistiche di andamento
+    const wins = hist.filter(h => h.won).length;
+    const best = Math.max(...hist.map(h => h.playerScore));
+    const stat = (label, val) => {
+      const el = document.createElement('div');
+      el.className = 'hist-tally';
+      el.innerHTML = `<span>${label}</span><b>${val}</b>`;
+      summaryEl.appendChild(el);
+    };
+    stat('Vittorie', `${wins}/${hist.length}`);
+    stat('Miglior punteggio', formatNum(best));
+
+    hist.forEach((h, idx) => {
+      const cls = h.won ? 'win' : 'loss';
+      const row = document.createElement('div');
+      row.className = 'hist-row' + (idx === 0 ? ' recent' : '');
+      row.innerHTML =
+        `<span class="hr-rank">${idx + 1}</span>` +
+        `<span class="hr-badge ${cls}">${h.won ? 'V' : 'P'}</span>` +
+        `<div class="hr-main">` +
+          `<div class="hr-win ${cls}">${h.won ? 'Vinto' : 'Perso'}</div>` +
+          `<div class="hr-sub">${h.opponent ? 'vs ' + escapeHtml(h.opponent) + ' · ' : ''}${DIFF_LABEL[h.difficulty] || ''} · ${formatDate(h.ts)}</div>` +
+        `</div>` +
+        `<span class="hr-score">${formatNum(h.playerScore)}–${formatNum(h.cpuScore)}</span>`;
+      listEl.appendChild(row);
+    });
+    return;
+  }
+
+  // --- multiplayer ---
+  titleEl.textContent = 'Storico — Multiplayer';
+  subEl.textContent = 'Ultime 10 partite «Passa il telefono».';
   if(hist.length === 0){
     listEl.innerHTML = '<div class="hist-empty">Nessuna partita multiplayer registrata.<br>Gioca una partita «Passa il telefono» per iniziare lo storico.</div>';
     return;
   }
-
-  // conteggio vittorie per nome (sulle partite memorizzate)
   const tally = {};
   for(const h of hist) tally[h.winner] = (tally[h.winner] || 0) + 1;
   Object.keys(tally).sort((a, b) => tally[b] - tally[a]).forEach(name => {
@@ -1005,8 +1378,6 @@ function buildHistoryScreen(){
     el.innerHTML = `<span>${escapeHtml(name)}</span><b>${tally[name]}</b>`;
     summaryEl.appendChild(el);
   });
-
-  // elenco partite: già ordinate dalla più recente alla più vecchia
   hist.forEach((h, idx) => {
     const av = (AVATARS[h.winnerAvatar] || AVATARS.male).svg;
     const row = document.createElement('div');
@@ -1021,6 +1392,172 @@ function buildHistoryScreen(){
       `<span class="hr-score">${formatNum(h.score)}–${formatNum(h.opponentScore)}</span>`;
     listEl.appendChild(row);
   });
+}
+
+// Piccolo dado in SVG (dimensione fissa) per gli esempi del regolamento.
+function miniDieSVG(v){
+  const POS = {
+    1: [[50,50]],
+    2: [[30,30],[70,70]],
+    3: [[30,30],[50,50],[70,70]],
+    4: [[30,30],[70,30],[30,70],[70,70]],
+    5: [[30,30],[70,30],[50,50],[30,70],[70,70]],
+    6: [[30,30],[70,30],[30,50],[70,50],[30,70],[70,70]],
+  };
+  const pips = (POS[v] || []).map(([x,y]) => `<circle cx="${x}" cy="${y}" r="9" fill="#2a2f4e"/>`).join('');
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">` +
+    `<rect x="6" y="6" width="88" height="88" rx="18" fill="#f5f6ff" stroke="#e0b24a" stroke-width="3"/>` +
+    pips + `</svg>`;
+}
+
+// Catalogo punteggi: alimenta sia la tabella "Punteggio visivo" sia il modale.
+const RULE_EXAMPLES = [
+  { name: 'Singolo 1',        dice: [1],           pts: 100,  desc: 'Un dado che mostra 1 vale 100 punti.' },
+  { name: 'Singolo 5',        dice: [5],           pts: 50,   desc: 'Un dado che mostra 5 vale 50 punti.' },
+  { name: 'Tre 1',            dice: [1,1,1],       pts: 1000, desc: 'Tre dadi con l\'1 valgono 1000 punti (il tris più ricco).' },
+  { name: 'Tre 2',            dice: [2,2,2],       pts: 200,  desc: 'Tre dadi con il 2 valgono 200 punti.' },
+  { name: 'Tre 3',            dice: [3,3,3],       pts: 300,  desc: 'Tre dadi con il 3 valgono 300 punti.' },
+  { name: 'Tre 4',            dice: [4,4,4],       pts: 400,  desc: 'Tre dadi con il 4 valgono 400 punti.' },
+  { name: 'Tre 5',            dice: [5,5,5],       pts: 500,  desc: 'Tre dadi con il 5 valgono 500 punti.' },
+  { name: 'Tre 6',            dice: [6,6,6],       pts: 600,  desc: 'Tre dadi con il 6 valgono 600 punti.' },
+  { name: 'Tre coppie',       dice: [2,2,4,4,6,6], pts: 750,  desc: 'Tre coppie qualsiasi nello stesso lancio: 750 punti.' },
+  { name: 'Scala 1-2-3-4-5-6', dice: [1,2,3,4,5,6], pts: 1000, desc: 'Tutti i numeri da 1 a 6 in un solo lancio: 1000 punti.' },
+];
+
+// Costruisce la tabella "Punteggio visivo": righe cliccabili nome + punti.
+function buildRulesExamples(){
+  const cont = document.getElementById('rules-examples');
+  if(!cont || cont.dataset.built) return; // costruisci una sola volta
+  cont.innerHTML = RULE_EXAMPLES.map((ex, i) =>
+    `<div class="rule-example" data-ex="${i}">` +
+      `<span class="sr-name">${ex.name}</span>` +
+      `<span class="sr-pts">${formatNum(ex.pts)}</span>` +
+      `<span class="re-zoom">&#8853;</span>` +
+    `</div>`
+  ).join('');
+  cont.dataset.built = '1';
+}
+
+// Apre il modale con la combinazione ingrandita.
+function openExampleModal(i){
+  const ex = RULE_EXAMPLES[i];
+  if(!ex) return;
+  document.getElementById('modal-dice').innerHTML = ex.dice.map(miniDieSVG).join('');
+  document.getElementById('modal-title').textContent = `${ex.name} = ${formatNum(ex.pts)}`;
+  document.getElementById('modal-desc').textContent = ex.desc;
+  const m = document.getElementById('example-modal');
+  m.classList.add('show');
+  m.setAttribute('aria-hidden', 'false');
+}
+function closeExampleModal(){
+  const m = document.getElementById('example-modal');
+  m.classList.remove('show');
+  m.setAttribute('aria-hidden', 'true');
+}
+
+/* =========================================================
+   UI POTERI DELL'EROE
+   ========================================================= */
+
+function heroTotalCharges(){
+  return Object.keys(HERO_POWERS).reduce((s, k) => s + hero.charges[k], 0);
+}
+
+// Aggiorna il pulsante "Poteri Eroe" in partita (visibile solo single, turno umano).
+function updateHeroButton(){
+  const btn = document.getElementById('btn-hero');
+  const singleHuman = state.mode === 'single' && state.current === 0 && state.running;
+  if(!singleHuman || heroTotalCharges() === 0){ btn.style.display = 'none'; return; }
+  btn.style.display = '';
+  btn.disabled = state.heroUsedThisMatch || state.busy;
+  btn.textContent = state.heroUsedThisMatch ? '★ Potere usato' : `★ Poteri Eroe (${heroTotalCharges()})`;
+}
+
+// Un potere è utilizzabile ora? (timing + carica + limite per partita)
+function canUseHero(key){
+  if(state.heroUsedThisMatch || hero.charges[key] <= 0) return false;
+  if(key === 'change') return activeCount() > 0;                 // serve un lancio in tavolo
+  if(key === 'super')  return state.turnScore === 0 && activeCount() === 0 && setCount() === 0; // a inizio turno
+  return true; // double, shield, reroll: durante il proprio turno
+}
+
+function openHeroPanel(){
+  document.getElementById('hero-values').style.display = 'none';
+  const list = document.getElementById('hero-list');
+  list.innerHTML = '';
+  for(const key of Object.keys(HERO_POWERS)){
+    const p = HERO_POWERS[key];
+    const n = hero.charges[key];
+    const usable = canUseHero(key);
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'hero-row' + (usable ? '' : ' disabled');
+    row.disabled = !usable;
+    row.innerHTML =
+      `<span class="hr-ico">${p.icon}</span>` +
+      `<span class="hr-txt"><b>${p.label}</b><small>${p.desc}</small></span>` +
+      `<span class="hr-n">×${n}</span>`;
+    row.addEventListener('click', () => activateHeroPower(key));
+    list.appendChild(row);
+  }
+  const anyUsable = Object.keys(HERO_POWERS).some(canUseHero);
+  document.getElementById('hero-note').textContent = state.heroUsedThisMatch
+    ? 'Hai già usato un potere in questa partita.'
+    : (anyUsable ? 'Puoi usare 1 potere per partita. Scegline uno:' : 'Nessun potere utilizzabile in questo momento.');
+  document.getElementById('hero-modal').classList.add('show');
+}
+function closeHeroPanel(){ document.getElementById('hero-modal').classList.remove('show'); }
+
+function consumeHero(key){
+  hero.charges[key]--;
+  state.heroUsedThisMatch = true;
+  saveHero();
+  updateHeroButton();
+}
+
+function activateHeroPower(key){
+  if(!canUseHero(key)) return;
+  if(key === 'change'){
+    // mostra la scelta del valore; la carica si consuma toccando il dado
+    const row = document.getElementById('hv-row');
+    row.innerHTML = '';
+    for(let v = 1; v <= 6; v++){
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'hv-btn'; b.textContent = v;
+      b.addEventListener('click', () => {
+        state.heroChangeValue = v;
+        closeHeroPanel();
+        setMessage(`Cambia Dado: tocca il dado da trasformare in ${v}.`, 'warn');
+      });
+      row.appendChild(b);
+    }
+    document.getElementById('hero-values').style.display = '';
+    return;
+  }
+  // poteri "armati" immediati
+  consumeHero(key);
+  if(key === 'double'){ state.heroDouble = true; setMessage('Punti Doppi attivi: verranno raddoppiati al bank.', 'good'); }
+  else if(key === 'shield'){ state.heroShield = true; setMessage('Scudo attivo: il prossimo Farkle sarà annullato.', 'good'); }
+  else if(key === 'reroll'){ state.heroLucky = true; setMessage('Rilancio Fortunato: il prossimo lancio non farà Farkle.', 'good'); }
+  else if(key === 'super'){ state.heroSuper = true; setMessage("Colpo dell'Eroe: turno senza Farkle e a punti doppi!", 'good'); }
+  showBanner(HERO_POWERS[key].label, 'hero');
+  closeHeroPanel();
+}
+
+// Riquadro progressione nella schermata Giocatore Singolo.
+function buildHeroProgress(){
+  const el = document.getElementById('hero-progress');
+  const charges = Object.keys(HERO_POWERS).map(k => {
+    const n = hero.charges[k];
+    return `<div class="hp-charge${n > 0 ? ' has' : ''}" title="${HERO_POWERS[k].label}">` +
+             `<span class="hp-ico">${HERO_POWERS[k].icon}</span><span class="hp-n">${n}</span></div>`;
+  }).join('');
+  const streaks = ['easy','medium','hard','expert'].map(d =>
+    `<span class="hp-st">${DIFF_LABEL[d]} <b>${hero.streak[d]}</b></span>`).join('');
+  el.innerHTML =
+    `<div class="hp-title">I tuoi Poteri dell'Eroe</div>` +
+    `<div class="hp-charges">${charges}</div>` +
+    `<div class="hp-streaks">Strisce: ${streaks}</div>`;
 }
 
 /* =========================================================
@@ -1045,12 +1582,20 @@ document.getElementById('diff-seg').addEventListener('click', e => {
   btn.classList.add('active');
 });
 
+// Menu → pagina Giocatore Singolo (obiettivo + difficoltà + storico)
 document.getElementById('btn-single').addEventListener('click', () => {
+  buildHeroProgress();
+  showScreen('single');
+});
+document.getElementById('btn-single-back').addEventListener('click', () => showScreen('menu'));
+document.getElementById('btn-single-start').addEventListener('click', () => {
+  const v = pickVillain(state.difficulty);
   startGame('single', [
     { name: 'Tu', avatar: prefs.avatar, dice: prefs.dice },
-    { name: 'CPU · ' + DIFF_LABEL[state.difficulty], avatar: 'cpu', dice: prefs.dice },
+    { name: v.name, avatar: v.avatar, dice: prefs.dice, power: v.power },
   ]);
 });
+document.getElementById('btn-single-history').addEventListener('click', () => openHistory('single', 'single'));
 
 document.getElementById('btn-multi').addEventListener('click', () => {
   document.getElementById('name-p1').value = '';
@@ -1058,6 +1603,7 @@ document.getElementById('btn-multi').addEventListener('click', () => {
   buildSetupCustomization();
   showScreen('setup');
 });
+document.getElementById('btn-setup-history').addEventListener('click', () => openHistory('multi', 'setup'));
 
 document.getElementById('btn-custom').addEventListener('click', () => {
   buildCustomScreen();
@@ -1065,24 +1611,43 @@ document.getElementById('btn-custom').addEventListener('click', () => {
 });
 document.getElementById('btn-custom-back').addEventListener('click', () => showScreen('menu'));
 
-document.getElementById('btn-history').addEventListener('click', () => {
-  buildHistoryScreen();
-  showScreen('history');
-});
-document.getElementById('btn-history-back').addEventListener('click', () => showScreen('menu'));
+// Storico: torna alla schermata di provenienza; svuota il tipo corrente
+document.getElementById('btn-history-back').addEventListener('click', () => showScreen(historyReturn));
 document.getElementById('btn-hist-clear').addEventListener('click', () => {
-  if(confirm('Svuotare lo storico delle vittorie?')){
-    clearHistory();
-    buildHistoryScreen();
+  if(confirm('Svuotare questo storico?')){
+    clearHistory(historyKind);
+    buildHistoryScreen(historyKind);
   }
 });
 document.getElementById('btn-over-history').addEventListener('click', () => {
-  buildHistoryScreen();
-  showScreen('history');
+  openHistory(state.mode === 'multi' ? 'multi' : 'single', 'over');
 });
 
-document.getElementById('btn-rules').addEventListener('click', () => showScreen('rules'));
+document.getElementById('btn-rules').addEventListener('click', () => {
+  buildRulesExamples();
+  showScreen('rules');
+});
 document.getElementById('btn-rules-back').addEventListener('click', () => showScreen('menu'));
+
+// Esempi cliccabili → apre il modale ingrandito
+document.getElementById('rules-examples').addEventListener('click', e => {
+  const row = e.target.closest('.rule-example');
+  if(row) openExampleModal(parseInt(row.dataset.ex, 10));
+});
+document.getElementById('modal-close').addEventListener('click', closeExampleModal);
+// chiusura toccando lo sfondo scuro (ma non la card)
+document.getElementById('example-modal').addEventListener('click', e => {
+  if(e.target.id === 'example-modal') closeExampleModal();
+});
+
+// Pannello Poteri dell'Eroe
+document.getElementById('btn-hero').addEventListener('click', () => {
+  if(!state.busy && !state.gameOver) openHeroPanel();
+});
+document.getElementById('hero-close').addEventListener('click', closeHeroPanel);
+document.getElementById('hero-modal').addEventListener('click', e => {
+  if(e.target.id === 'hero-modal') closeHeroPanel();
+});
 document.getElementById('btn-setup-back').addEventListener('click', () => showScreen('menu'));
 
 document.getElementById('btn-setup-start').addEventListener('click', () => {
@@ -1119,5 +1684,6 @@ document.getElementById('btn-menu').addEventListener('click', () => showScreen('
 
 // avvio
 loadPrefs();
+loadHero();
 applyDiceTheme(prefs.dice);
 showScreen('menu');

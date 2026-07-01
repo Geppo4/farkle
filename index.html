@@ -59,8 +59,9 @@
           <button class="seg-btn" data-diff="hard"><b>Difficile</b></button>
           <button class="seg-btn" data-diff="expert"><b>Esperto</b></button>
         </div>
-        <span class="ts-hint">Esperto: l'IA gioca in modo perfetto (Sauron).</span>
+        <span class="ts-hint">Ogni avversario ha un potere che invoca se resta indietro. L'Esperto &egrave; Sauron: gioco perfetto + il potere dell'Anello.</span>
       </div>
+      <div class="hero-progress" id="hero-progress"></div>
       <button class="btn btn-primary" id="btn-single-start">Inizia Partita</button>
       <button class="btn btn-ghost" id="btn-single-history">Storico Vittorie</button>
       <button class="btn btn-ghost" id="btn-single-back">Indietro</button>
@@ -80,6 +81,14 @@
         <p class="rules-hint">Tocca una combinazione per vedere l'esempio coi dadi.</p>
         <div class="rules-examples" id="rules-examples"></div>
         <p class="note">Non puoi combinare dadi di lanci diversi per formare una combinazione.</p>
+
+        <h3>Poteri dei Villain</h3>
+        <p>Ogni avversario ha un potere speciale che invoca <strong>solo quando è in svantaggio</strong>, per tentare la rimonta. Sauron usa il potere dell'Anello per evitare un Farkle; altri villain trasformano un dado a proprio favore o rubano punti. Pi&ugrave; alto &egrave; il livello, pi&ugrave; forte &egrave; il potere.</p>
+
+        <h3>Poteri dell'Eroe (i tuoi)</h3>
+        <p><strong>Come si conquistano:</strong> vinci <strong>5 partite di fila</strong> a una difficolt&agrave; per guadagnare una carica del suo potere. Sono cumulabili (10 vittorie = 2 cariche) e una sconfitta azzera solo quella striscia. Con una striscia da 5 su <strong>tutte e 4</strong> le difficolt&agrave; sblocchi il <strong>Colpo dell'Eroe</strong>.</p>
+        <div class="power-list" id="rules-hero-powers"></div>
+        <p><strong>Come si usano:</strong> nel Giocatore Singolo, durante il tuo turno, tocca <strong>&#9733; Poteri Eroe</strong> e scegline uno. Puoi usare <strong>un solo potere per partita</strong>; le cariche restano salvate e valgono contro qualsiasi villain.</p>
       </div>
       <button class="btn btn-primary" id="btn-rules-back">Indietro</button>
     </div>
@@ -194,6 +203,7 @@
       <button class="btn btn-primary" id="btn-roll">Lancia Dadi</button>
       <button class="btn btn-bank" id="btn-bank">Metti al Sicuro</button>
     </div>
+    <button class="btn btn-hero small" id="btn-hero">&#9733; Poteri Eroe</button>
     <button class="btn btn-ghost small" id="btn-quit">Esci dalla partita</button>
   </section>
 
@@ -202,6 +212,7 @@
     <div class="over-wrap">
       <div class="trophy">&#127942;</div>
       <h2 id="winner-text">Vittoria!</h2>
+      <p class="hero-reward" id="hero-reward" style="display:none"></p>
       <div class="final-board" id="final-board"></div>
       <button class="btn btn-primary" id="btn-again">Gioca Ancora</button>
       <button class="btn btn-ghost" id="btn-over-history">Storico Vittorie</button>
@@ -217,6 +228,20 @@
       <h3 id="modal-title"></h3>
       <p id="modal-desc"></p>
       <button class="btn btn-primary" id="modal-close">Chiudi</button>
+    </div>
+  </div>
+
+  <!-- ===== MODALE POTERI DELL'EROE ===== -->
+  <div id="hero-modal" class="modal" aria-hidden="true">
+    <div class="modal-card hero-card">
+      <h3>Poteri dell'Eroe</h3>
+      <p class="hero-note" id="hero-note">Puoi usare 1 potere per partita.</p>
+      <div class="hero-list" id="hero-list"></div>
+      <div class="hero-values" id="hero-values" style="display:none">
+        <span>Scegli il valore del dado:</span>
+        <div class="hv-row" id="hv-row"></div>
+      </div>
+      <button class="btn btn-primary" id="hero-close">Chiudi</button>
     </div>
   </div>
 

@@ -242,6 +242,9 @@ body{
 .banner.show{animation:pop 1.4s ease forwards;}
 .banner.farkle{background:linear-gradient(135deg,var(--red),#c81d4a);color:#fff;}
 .banner.hot{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#2a1700;}
+.banner.ring{background:linear-gradient(135deg,#2a0808,#8a1414);color:#ffce54;
+  letter-spacing:1px;text-shadow:0 0 10px rgba(255,180,60,.8);
+  box-shadow:0 0 26px rgba(255,120,40,.55),var(--shadow);}
 @keyframes pop{
   0%{opacity:0;transform:translate(-50%,-50%) scale(.5);}
   15%{opacity:1;transform:translate(-50%,-50%) scale(1.1);}
@@ -402,6 +405,42 @@ body{
 .modal-card h3{font-size:22px;color:var(--accent);}
 .modal-card p{font-size:15px;color:var(--text);line-height:1.45;}
 .modal-card .btn{max-width:220px;}
+
+/* ===== Poteri dell'Eroe ===== */
+.btn-hero{background:linear-gradient(135deg,#4d8dff,#7a5cff);color:#fff;}
+.banner.hero{background:linear-gradient(135deg,#2b5bd7,#7a5cff);color:#fff;
+  text-shadow:0 0 10px rgba(150,160,255,.8);box-shadow:0 0 24px rgba(90,120,255,.5),var(--shadow);}
+.hero-reward{text-align:center;color:var(--accent);font-size:15px;
+  background:rgba(255,176,32,.12);border:1px solid rgba(255,176,32,.3);border-radius:12px;padding:10px 14px;}
+.hero-reward b{color:var(--accent);}
+
+.hero-progress{background:var(--card);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;}
+.hp-title{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+.hp-charges{display:flex;gap:8px;flex-wrap:wrap;}
+.hp-charge{display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.05);border-radius:10px;padding:6px 10px;opacity:.4;font-weight:700;}
+.hp-charge.has{opacity:1;background:linear-gradient(135deg,rgba(77,141,255,.28),rgba(122,92,255,.22));}
+.hp-ico{font-size:16px;}
+.hp-n{font-weight:800;}
+.hp-streaks{font-size:13px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;}
+.hp-st b{color:var(--text);}
+
+.hero-card{max-width:400px;}
+.hero-note{font-size:13px;color:var(--muted);}
+.hero-list{display:flex;flex-direction:column;gap:8px;width:100%;}
+.hero-row{display:flex;align-items:center;gap:12px;text-align:left;width:100%;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;
+  padding:10px 12px;cursor:pointer;color:var(--text);transition:background .15s,transform .08s;}
+.hero-row:active{transform:scale(.98);}
+.hero-row.disabled{opacity:.4;cursor:default;}
+.hero-row .hr-ico{font-size:22px;width:30px;text-align:center;flex:none;color:#8aa8ff;}
+.hero-row .hr-txt{flex:1;min-width:0;display:flex;flex-direction:column;}
+.hero-row .hr-txt small{color:var(--muted);font-size:12px;}
+.hero-row .hr-n{font-weight:800;color:var(--accent);flex:none;}
+.hero-values{display:flex;flex-direction:column;gap:8px;align-items:center;width:100%;}
+.hv-row{display:flex;gap:8px;}
+.hv-btn{width:42px;height:42px;border-radius:10px;border:none;
+  background:linear-gradient(135deg,#4d8dff,#7a5cff);color:#fff;font-size:18px;font-weight:800;cursor:pointer;}
+.hv-btn:active{transform:scale(.95);}
 
 /* ===== Schermi piccoli ===== */
 @media (max-height:680px){
