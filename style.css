@@ -405,6 +405,10 @@ body{
 .account-box{background:var(--card);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:4px;align-items:center;}
 .account-box span{font-size:13px;color:var(--muted);}
 .account-box b{font-size:17px;color:var(--text);word-break:break-all;text-align:center;}
+.btn-link{background:none;border:none;color:var(--blue);font-size:14px;
+  text-decoration:underline;cursor:pointer;padding:6px;align-self:center;}
+.btn-link:active{opacity:.7;}
+#auth-recovery{display:flex;flex-direction:column;gap:14px;}
 
 /* ===== Elenco poteri nel regolamento ===== */
 .power-list{display:flex;flex-direction:column;gap:8px;margin:4px 0;}

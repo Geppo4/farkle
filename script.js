@@ -356,6 +356,21 @@ async function authSignIn(email, pass){
 }
 async function authSignOut(){ try { await sb.auth.signOut(); } catch(e){} currentUser = null; }
 
+// Invia l'email di reimpostazione password (link che riporta al gioco).
+async function authResetPassword(email){
+  const redirectTo = location.origin + location.pathname; // torna a questa pagina
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo });
+  if(error) return { ok: false, msg: traduciAuthErr(error.message) };
+  return { ok: true };
+}
+// Imposta la nuova password (dopo essere tornati dal link di recupero).
+async function authUpdatePassword(newPass){
+  const { error } = await sb.auth.updateUser({ password: newPass });
+  if(error) return { ok: false, msg: traduciAuthErr(error.message) };
+  return { ok: true };
+}
+let recoveryMode = false; // true quando si torna dal link "password dimenticata"
+
 function traduciAuthErr(m){
   m = (m || '').toLowerCase();
   if(m.includes('invalid login')) return 'Email o password non corretti.';
@@ -373,8 +388,15 @@ async function initAuth(){
     currentUser = data && data.session ? data.session.user : null;
     updateAccountHint();
     if(currentUser) await pullCloud();
-    sb.auth.onAuthStateChange((_event, session) => {
+    sb.auth.onAuthStateChange((event, session) => {
       currentUser = session ? session.user : null;
+      if(event === 'PASSWORD_RECOVERY'){
+        // l'utente è tornato dal link dell'email: chiedi la nuova password
+        recoveryMode = true;
+        buildAuthScreen();
+        showScreen('auth');
+        return;
+      }
       if(currentUser) pullCloud();
       if(screens.auth && screens.auth.classList.contains('active')) buildAuthScreen();
       updateAccountHint();
@@ -1733,12 +1755,21 @@ function updateAccountHint(){
 function buildAuthScreen(){
   const form = document.getElementById('auth-form');
   const acc  = document.getElementById('auth-account');
+  const rec  = document.getElementById('auth-recovery');
   const sub  = document.getElementById('auth-sub');
   authMsg('');
+  rec.style.display = 'none';
   if(!cloudEnabled()){
     form.style.display = 'none';
     acc.style.display = 'none';
     sub.textContent = 'Salvataggio cloud non ancora configurato dallo sviluppatore.';
+    return;
+  }
+  if(recoveryMode){
+    form.style.display = 'none';
+    acc.style.display = 'none';
+    rec.style.display = '';
+    sub.textContent = 'Recupero password: scegli una nuova password.';
     return;
   }
   if(currentUser){
@@ -1788,6 +1819,25 @@ document.getElementById('btn-signup').addEventListener('click', async () => {
 document.getElementById('btn-logout').addEventListener('click', async () => {
   await authSignOut();
   buildAuthScreen();
+});
+document.getElementById('btn-forgot').addEventListener('click', async () => {
+  const email = document.getElementById('auth-email').value.trim();
+  if(!email){ authMsg('Scrivi la tua email qui sopra, poi tocca "Password dimenticata?".', 'bad'); return; }
+  authMsg('Invio email in corso…', '');
+  const r = await authResetPassword(email);
+  if(!r.ok) authMsg(r.msg, 'bad');
+  else authMsg('Ti abbiamo inviato un\'email per reimpostare la password.', 'good');
+});
+document.getElementById('btn-newpass').addEventListener('click', async () => {
+  const recMsg = document.getElementById('rec-msg');
+  const np = document.getElementById('auth-newpass').value;
+  if(np.length < 6){ recMsg.textContent = 'Password troppo corta (almeno 6 caratteri).'; recMsg.className = 'auth-msg bad'; return; }
+  recMsg.textContent = 'Aggiornamento…'; recMsg.className = 'auth-msg';
+  const r = await authUpdatePassword(np);
+  if(!r.ok){ recMsg.textContent = r.msg; recMsg.className = 'auth-msg bad'; return; }
+  recoveryMode = false;
+  buildAuthScreen();
+  authMsg('Password aggiornata! Ora sei connesso.', 'good');
 });
 
 // Selettore obiettivo

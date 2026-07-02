@@ -89,6 +89,16 @@
         <p class="auth-msg" id="auth-msg"></p>
         <button class="btn btn-primary" id="btn-login">Accedi</button>
         <button class="btn btn-secondary" id="btn-signup">Registrati</button>
+        <button class="btn-link" id="btn-forgot" type="button">Password dimenticata?</button>
+      </div>
+      <div id="auth-recovery" style="display:none">
+        <p class="setup-sub">Imposta una nuova password per il tuo account.</p>
+        <label class="field">
+          <span>Nuova password</span>
+          <input type="password" id="auth-newpass" autocomplete="new-password" placeholder="almeno 6 caratteri">
+        </label>
+        <p class="auth-msg" id="rec-msg"></p>
+        <button class="btn btn-primary" id="btn-newpass">Salva nuova password</button>
       </div>
       <div id="auth-account" style="display:none">
         <div class="account-box"><span>Connesso come</span><b id="account-email"></b></div>
