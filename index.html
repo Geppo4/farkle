@@ -25,6 +25,10 @@
         <p class="tagline">Il classico gioco di dadi</p>
       </div>
       <div class="menu-buttons">
+        <div class="account-cta">
+          <button class="btn btn-account" id="btn-account">Account</button>
+          <span class="menu-hint" id="account-hint"></span>
+        </div>
         <button class="btn btn-primary" id="btn-single">Giocatore Singolo</button>
         <button class="btn btn-secondary" id="btn-multi">Multiplayer Locale</button>
         <button class="btn btn-ghost" id="btn-custom">Personalizza</button>
@@ -65,6 +69,32 @@
       <button class="btn btn-primary" id="btn-single-start">Inizia Partita</button>
       <button class="btn btn-ghost" id="btn-single-history">Storico Vittorie</button>
       <button class="btn btn-ghost" id="btn-single-back">Indietro</button>
+    </div>
+  </section>
+
+  <!-- ===== SCHERMATA ACCOUNT (login / cloud) ===== -->
+  <section id="screen-auth" class="screen">
+    <div class="setup-wrap">
+      <h2>Account</h2>
+      <p class="setup-sub" id="auth-sub">Accedi per salvare i progressi nel cloud.</p>
+      <div id="auth-form">
+        <label class="field">
+          <span>Email</span>
+          <input type="email" id="auth-email" autocomplete="email" placeholder="tu@esempio.it">
+        </label>
+        <label class="field">
+          <span>Password</span>
+          <input type="password" id="auth-pass" autocomplete="current-password" placeholder="almeno 6 caratteri">
+        </label>
+        <p class="auth-msg" id="auth-msg"></p>
+        <button class="btn btn-primary" id="btn-login">Accedi</button>
+        <button class="btn btn-secondary" id="btn-signup">Registrati</button>
+      </div>
+      <div id="auth-account" style="display:none">
+        <div class="account-box"><span>Connesso come</span><b id="account-email"></b></div>
+        <button class="btn btn-bank" id="btn-logout">Esci dall'account</button>
+      </div>
+      <button class="btn btn-ghost" id="btn-auth-back">Indietro</button>
     </div>
   </section>
 
@@ -213,6 +243,7 @@
       <div class="trophy">&#127942;</div>
       <h2 id="winner-text">Vittoria!</h2>
       <p class="hero-reward" id="hero-reward" style="display:none"></p>
+      <button class="account-nudge" id="account-nudge" style="display:none">&#128190; Crea un account per salvare i tuoi progressi</button>
       <div class="final-board" id="final-board"></div>
       <button class="btn btn-primary" id="btn-again">Gioca Ancora</button>
       <button class="btn btn-ghost" id="btn-over-history">Storico Vittorie</button>
@@ -246,6 +277,7 @@
   </div>
 
 </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="script.js"></script>
 <script>
   // Registra il service worker solo su http/https (non da file:// o nel wrapper nativo).

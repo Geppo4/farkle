@@ -2,8 +2,15 @@
 
 /* =========================================================
    FARKLE — logica di gioco
-   HTML/CSS/JS puri, nessuna dipendenza esterna.
    ========================================================= */
+
+/* ---- Configurazione Supabase (salvataggio cloud, opzionale) ----
+   Incolla la chiave "anon public" del TUO progetto (Dashboard → Settings → API).
+   La chiave 'anon' è PUBBLICA: è sicura nel client SOLO se hai attivato la RLS
+   sulla tabella (vedi SUPABASE_SETUP.md). NON mettere qui la chiave service_role.
+   Se lasci la chiave vuota, il gioco funziona lo stesso, solo in locale. */
+const SUPABASE_URL = 'https://rccgnfjohubwfhqxgkey.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjY2duZmpvaHVid2ZocXhna2V5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0OTEwNzUsImV4cCI6MjA5MTA2NzA3NX0.1pvKzoI9lG6NAfqIpUqpibHniVC9GS-Di6eBRxHRASk'; // <-- incolla qui la chiave "anon public"
 
 const NUM_DICE = 6;
 
@@ -196,6 +203,7 @@ function loadPrefs(){
 }
 function savePrefs(){
   try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch(e){}
+  scheduleCloudSync();
 }
 
 /* --- Storico vittorie: due archivi separati (multi/single), ultime 10 ognuno,
@@ -213,6 +221,7 @@ function loadHistory(kind){
 }
 function saveHistory(kind, arr){
   try { localStorage.setItem(HISTORY_KEYS[kind], JSON.stringify(arr)); } catch(e){}
+  scheduleCloudSync();
 }
 // inserisce una nuova partita in testa e mantiene solo le ultime HISTORY_MAX
 function recordMatch(kind, entry){
@@ -256,7 +265,123 @@ function loadHero(){
     }
   } catch(e){}
 }
-function saveHero(){ try { localStorage.setItem(HERO_KEY, JSON.stringify(hero)); } catch(e){} }
+function saveHero(){ try { localStorage.setItem(HERO_KEY, JSON.stringify(hero)); } catch(e){} scheduleCloudSync(); }
+
+/* =========================================================
+   SALVATAGGIO CLOUD (Supabase Auth email/password + tabella 'saves')
+   Facoltativo: se non configurato o offline, il gioco resta in locale.
+   ========================================================= */
+let sb = null;
+try {
+  if(window.supabase && SUPABASE_ANON_KEY){
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+} catch(e){ sb = null; }
+
+let currentUser = null;   // utente Supabase loggato (o null)
+let syncSuppressed = false;
+let syncTimer = null;
+
+function cloudEnabled(){ return !!sb; }
+
+// Raccoglie tutti i dati da sincronizzare (progressi + preferenze + storico).
+function gatherSaveData(){
+  return {
+    v: 1,
+    hero: { streak: hero.streak, charges: hero.charges, superFlag: hero.superFlag },
+    prefs: { avatar: prefs.avatar, dice: prefs.dice },
+    history: { single: loadHistory('single'), multi: loadHistory('multi') },
+  };
+}
+// Applica i dati arrivati dal cloud allo stato locale (senza ri-sincronizzare).
+function applySaveData(d){
+  if(!d) return;
+  syncSuppressed = true;
+  try {
+    if(d.hero){
+      Object.assign(hero.streak, d.hero.streak || {});
+      Object.assign(hero.charges, d.hero.charges || {});
+      Object.assign(hero.superFlag, d.hero.superFlag || {});
+      saveHero();
+    }
+    if(d.prefs){
+      if(AVATARS[d.prefs.avatar] && AVATARS[d.prefs.avatar].selectable) prefs.avatar = d.prefs.avatar;
+      if(DICE_THEMES[d.prefs.dice]) prefs.dice = d.prefs.dice;
+      savePrefs();
+      applyDiceTheme(prefs.dice);
+    }
+    if(d.history){
+      if(Array.isArray(d.history.single)) saveHistory('single', d.history.single);
+      if(Array.isArray(d.history.multi))  saveHistory('multi',  d.history.multi);
+    }
+  } finally { syncSuppressed = false; }
+}
+
+// Programma un salvataggio nel cloud (debounce), se loggato.
+function scheduleCloudSync(){
+  if(!sb || !currentUser || syncSuppressed) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(pushCloud, 800);
+}
+async function pushCloud(){
+  if(!sb || !currentUser) return;
+  try {
+    await sb.from('saves').upsert({
+      id: currentUser.id, data: gatherSaveData(), updated_at: new Date().toISOString(),
+    });
+  } catch(e){}
+}
+async function pullCloud(){
+  if(!sb || !currentUser) return;
+  try {
+    const { data, error } = await sb.from('saves').select('data').eq('id', currentUser.id).maybeSingle();
+    if(!error && data && data.data) applySaveData(data.data);
+    else if(!error && !data) await pushCloud(); // primo accesso: carica i progressi locali
+  } catch(e){}
+  updateHeroButton();
+  if(screens.single && screens.single.classList.contains('active')) buildHeroProgress();
+}
+
+/* ---- Autenticazione email/password ---- */
+async function authSignUp(email, pass){
+  const { data, error } = await sb.auth.signUp({ email, password: pass });
+  if(error) return { ok: false, msg: traduciAuthErr(error.message) };
+  if(data.session) return { ok: true };
+  return { ok: true, msg: 'Registrazione avviata: controlla la tua email per confermare.' };
+}
+async function authSignIn(email, pass){
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if(error) return { ok: false, msg: traduciAuthErr(error.message) };
+  return { ok: true };
+}
+async function authSignOut(){ try { await sb.auth.signOut(); } catch(e){} currentUser = null; }
+
+function traduciAuthErr(m){
+  m = (m || '').toLowerCase();
+  if(m.includes('invalid login')) return 'Email o password non corretti.';
+  if(m.includes('already registered')) return 'Email già registrata: prova ad accedere.';
+  if(m.includes('password')) return 'Password troppo corta (almeno 6 caratteri).';
+  if(m.includes('email')) return 'Email non valida.';
+  return 'Errore: ' + m;
+}
+
+// Avvia l'auth all'apertura: riprende la sessione e registra i cambi di stato.
+async function initAuth(){
+  if(!sb) return;
+  try {
+    const { data } = await sb.auth.getSession();
+    currentUser = data && data.session ? data.session.user : null;
+    updateAccountHint();
+    if(currentUser) await pullCloud();
+    sb.auth.onAuthStateChange((_event, session) => {
+      currentUser = session ? session.user : null;
+      if(currentUser) pullCloud();
+      if(screens.auth && screens.auth.classList.contains('active')) buildAuthScreen();
+      updateAccountHint();
+      updateHeroButton();
+    });
+  } catch(e){}
+}
 
 /* Aggiorna la progressione a fine partita single. Ritorna la lista dei poteri
    guadagnati (per la notifica a schermo), oppure []. */
@@ -489,6 +614,7 @@ const state = {
 const screens = {
   menu:    document.getElementById('screen-menu'),
   single:  document.getElementById('screen-single'),
+  auth:    document.getElementById('screen-auth'),
   rules:   document.getElementById('screen-rules'),
   setup:   document.getElementById('screen-setup'),
   custom:  document.getElementById('screen-custom'),
@@ -992,6 +1118,10 @@ function finishGame(){
   // il pulsante storico a fine partita è sempre disponibile
   document.getElementById('btn-over-history').style.display = '';
 
+  // invito a registrarsi (solo single, cloud attivo, non ancora loggato)
+  document.getElementById('account-nudge').style.display =
+    (state.mode === 'single' && cloudEnabled() && !currentUser) ? '' : 'none';
+
   // progressione eroe (solo single): aggiorna strisce e cariche
   const rewardEl = document.getElementById('hero-reward');
   if(state.mode === 'single'){
@@ -1438,6 +1568,21 @@ function buildRulesExamples(){
   cont.dataset.built = '1';
 }
 
+// Elenco dei poteri dell'eroe nel regolamento (generato dal registro).
+function buildRulesPowers(){
+  const cont = document.getElementById('rules-hero-powers');
+  if(!cont || cont.dataset.built) return;
+  const from = { double: 'Facile', change: 'Medio', shield: 'Difficile', reroll: 'Esperto', super: 'Super' };
+  cont.innerHTML = Object.keys(HERO_POWERS).map(k => {
+    const p = HERO_POWERS[k];
+    return `<div class="power-item">` +
+             `<span class="pi-ico">${p.icon}</span>` +
+             `<span class="pi-txt"><b>${p.label}</b> <small>(${from[k]})</small><br>${p.desc}</span>` +
+           `</div>`;
+  }).join('');
+  cont.dataset.built = '1';
+}
+
 // Apre il modale con la combinazione ingrandita.
 function openExampleModal(i){
   const ex = RULE_EXAMPLES[i];
@@ -1561,8 +1706,89 @@ function buildHeroProgress(){
 }
 
 /* =========================================================
+   UI ACCOUNT (login / salvataggio cloud)
+   ========================================================= */
+
+function authMsg(text, cls){
+  const el = document.getElementById('auth-msg');
+  el.textContent = text || '';
+  el.className = 'auth-msg' + (cls ? ' ' + cls : '');
+}
+
+// Didascalia sotto il pulsante Account nel menu (invita alla registrazione).
+function updateAccountHint(){
+  const el = document.getElementById('account-hint');
+  if(!el) return;
+  if(!cloudEnabled()){ el.style.display = 'none'; return; }
+  el.style.display = '';
+  if(currentUser){
+    el.textContent = 'Connesso: progressi salvati ☁︎';
+    el.className = 'menu-hint good';
+  } else {
+    el.textContent = 'Registrati per salvare i tuoi progressi';
+    el.className = 'menu-hint';
+  }
+}
+
+function buildAuthScreen(){
+  const form = document.getElementById('auth-form');
+  const acc  = document.getElementById('auth-account');
+  const sub  = document.getElementById('auth-sub');
+  authMsg('');
+  if(!cloudEnabled()){
+    form.style.display = 'none';
+    acc.style.display = 'none';
+    sub.textContent = 'Salvataggio cloud non ancora configurato dallo sviluppatore.';
+    return;
+  }
+  if(currentUser){
+    form.style.display = 'none';
+    acc.style.display = '';
+    document.getElementById('account-email').textContent = currentUser.email || '(account)';
+    sub.textContent = 'Sei connesso: i tuoi progressi si salvano nel cloud e ti seguono su ogni dispositivo.';
+  } else {
+    form.style.display = '';
+    acc.style.display = 'none';
+    sub.textContent = 'Accedi o registrati per salvare i progressi nel cloud e ritrovarli ovunque.';
+  }
+}
+
+/* =========================================================
    EVENTI INTERFACCIA
    ========================================================= */
+
+// Account
+document.getElementById('btn-account').addEventListener('click', () => {
+  buildAuthScreen();
+  showScreen('auth');
+});
+document.getElementById('btn-auth-back').addEventListener('click', () => showScreen('menu'));
+document.getElementById('account-nudge').addEventListener('click', () => {
+  buildAuthScreen();
+  showScreen('auth');
+});
+document.getElementById('btn-login').addEventListener('click', async () => {
+  const email = document.getElementById('auth-email').value.trim();
+  const pass = document.getElementById('auth-pass').value;
+  if(!email || !pass){ authMsg('Inserisci email e password.', 'bad'); return; }
+  authMsg('Accesso in corso…', '');
+  const r = await authSignIn(email, pass);
+  if(!r.ok) authMsg(r.msg, 'bad');
+  else { authMsg('Accesso riuscito!', 'good'); buildAuthScreen(); }
+});
+document.getElementById('btn-signup').addEventListener('click', async () => {
+  const email = document.getElementById('auth-email').value.trim();
+  const pass = document.getElementById('auth-pass').value;
+  if(!email || pass.length < 6){ authMsg('Email valida e password di almeno 6 caratteri.', 'bad'); return; }
+  authMsg('Registrazione in corso…', '');
+  const r = await authSignUp(email, pass);
+  if(!r.ok) authMsg(r.msg, 'bad');
+  else authMsg(r.msg || 'Account creato!', 'good'), buildAuthScreen();
+});
+document.getElementById('btn-logout').addEventListener('click', async () => {
+  await authSignOut();
+  buildAuthScreen();
+});
 
 // Selettore obiettivo
 document.getElementById('target-seg').addEventListener('click', e => {
@@ -1625,6 +1851,7 @@ document.getElementById('btn-over-history').addEventListener('click', () => {
 
 document.getElementById('btn-rules').addEventListener('click', () => {
   buildRulesExamples();
+  buildRulesPowers();
   showScreen('rules');
 });
 document.getElementById('btn-rules-back').addEventListener('click', () => showScreen('menu'));
@@ -1687,3 +1914,5 @@ loadPrefs();
 loadHero();
 applyDiceTheme(prefs.dice);
 showScreen('menu');
+updateAccountHint();
+initAuth(); // riprende la sessione e sincronizza (se configurato)

@@ -1,7 +1,7 @@
 /* Service Worker di Farkle — caching offline dell'app shell.
    Strategia: cache-first per le risorse statiche, con fallback a index.html. */
 
-const CACHE = 'farkle-v4';
+const CACHE = 'farkle-v7';
 
 const ASSETS = [
   './',
