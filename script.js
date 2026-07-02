@@ -383,25 +383,27 @@ function traduciAuthErr(m){
 // Avvia l'auth all'apertura: riprende la sessione e registra i cambi di stato.
 async function initAuth(){
   if(!sb) return;
+  // Registra SUBITO l'ascoltatore (prima di qualsiasi await): così cattura anche
+  // l'evento PASSWORD_RECOVERY che scatta al ritorno dal link dell'email.
+  sb.auth.onAuthStateChange((event, session) => {
+    currentUser = session ? session.user : null;
+    if(event === 'PASSWORD_RECOVERY'){
+      recoveryMode = true;
+      buildAuthScreen();
+      showScreen('auth');
+      return;
+    }
+    if(recoveryMode) return; // durante il recupero non sovrascrivere la schermata
+    if(currentUser) pullCloud();
+    if(screens.auth && screens.auth.classList.contains('active')) buildAuthScreen();
+    updateAccountHint();
+    updateHeroButton();
+  });
   try {
     const { data } = await sb.auth.getSession();
     currentUser = data && data.session ? data.session.user : null;
     updateAccountHint();
-    if(currentUser) await pullCloud();
-    sb.auth.onAuthStateChange((event, session) => {
-      currentUser = session ? session.user : null;
-      if(event === 'PASSWORD_RECOVERY'){
-        // l'utente è tornato dal link dell'email: chiedi la nuova password
-        recoveryMode = true;
-        buildAuthScreen();
-        showScreen('auth');
-        return;
-      }
-      if(currentUser) pullCloud();
-      if(screens.auth && screens.auth.classList.contains('active')) buildAuthScreen();
-      updateAccountHint();
-      updateHeroButton();
-    });
+    if(currentUser && !recoveryMode) await pullCloud();
   } catch(e){}
 }
 
@@ -1836,7 +1838,9 @@ document.getElementById('btn-newpass').addEventListener('click', async () => {
   const r = await authUpdatePassword(np);
   if(!r.ok){ recMsg.textContent = r.msg; recMsg.className = 'auth-msg bad'; return; }
   recoveryMode = false;
+  await pullCloud();          // ora è connesso: carica i suoi progressi
   buildAuthScreen();
+  updateAccountHint();
   authMsg('Password aggiornata! Ora sei connesso.', 'good');
 });
 
